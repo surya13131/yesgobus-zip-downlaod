@@ -1,0 +1,96 @@
+.page-container{
+min-height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#ffffff;
+padding:80px 0;
+}
+
+.travel-card{
+width:760px;
+padding:40px;
+background:#ffffff;
+border:3px solid transparent;
+background-image:
+linear-gradient(#ffffff,#ffffff),
+linear-gradient(90deg,#2BC0D3,#0C3B63);
+background-origin:border-box;
+background-clip:padding-box,border-box;
+border-radius:20px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+.travel-title{
+text-align:center;
+font-size:30px;
+font-weight:700;
+color:#0C3B63;
+margin-bottom:35px;
+}
+
+.form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:22px;
+}
+
+.full{
+grid-column:span 2;
+}
+
+.travel-input{
+background:#ffffffee;
+border:1.5px solid #2BC0D3;
+border-radius:10px;
+height:50px;
+padding:0 16px;
+font-size:14px;
+outline:none;
+width:100%;
+}
+
+.phone-row{
+grid-column:span 2;
+display:flex;
+gap:14px;
+}
+
+.phone-prefix{
+background:#0C3B63;
+color:white;
+height:50px;
+padding:0 20px;
+display:flex;
+align-items:center;
+border-radius:10px;
+font-weight:600;
+}
+
+.submit-wrapper{
+display:flex;
+justify-content:center;
+margin-top:40px;
+}
+
+.submit-btn{
+width:260px;
+height:50px;
+border-radius:14px;
+color:white;
+font-weight:600;
+font-size:16px;
+border:none;
+background:linear-gradient(90deg,#0C3B63,#2BC0D3);
+cursor:pointer;
+}
+input:focus,
+textarea:focus{
+    outline:none;
+    border-color:#033564;
+    box-shadow:0 0 6px rgba(20,189,227,0.4);
+}
+input[type="date"] {
+    color: #033564;   /* same text color as other inputs */
+}input{
+    background-color: #f8f4f4;
+}

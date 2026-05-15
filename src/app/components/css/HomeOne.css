@@ -1,0 +1,320 @@
+/* Home.css */
+
+/* --- Feature Bar --- */
+.feature-text-main { 
+    font-size: 23px; 
+    letter-spacing: -0.2px; 
+}
+
+.feature-divider-thick { 
+    width: 2px; 
+    height: 30px; 
+    background-color: #000; 
+}
+
+/* --- Search Box Container --- */
+.search-box-figma-container {
+    background-color: #0B4F75; /* cleaner modern blue */
+    border-radius: 14px;
+    max-width: 1750px;
+    width: 98%;
+    overflow: visible;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+    padding: 14px;
+}
+
+.search-flex-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch; 
+    height: 65px; 
+}
+
+.search-section {
+    background: #fff;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    border-radius: 8px;
+}
+
+.inner-input-box {
+    background: #fff;
+    width: 120%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 15px;
+    border-radius: 4px;
+}
+
+/* --- Swap Icon & Dividers --- */
+.blue-divider-spacer {
+    width: 20px;
+    background-color: #0B4F75;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.swap-icon-btn {
+    background-color: #218EEA; 
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #011c3a; 
+    font-weight: bold;
+    font-size: 22px;
+    cursor: pointer;
+    position: absolute;
+    z-index: 2;
+}
+
+/* --- Input Fields --- */
+.search-field {
+    border: none;
+    outline: none;
+    font-weight: 500;
+    width: 100%;
+    color: #333;
+    font-size: 18px;
+    background: transparent;
+    text-align: center;
+}
+
+.search-field-centered {
+    border: none;
+    outline: none;
+    font-weight: 500;
+    font-size: 14px;
+    color: #333;
+    background: transparent;
+    text-align: center;
+    width: 100%;
+    padding: 0;
+}
+
+/* --- Date Section Specifics --- */
+.date-input-container .inner-input-box {
+    display: flex;
+    align-items: stretch;
+    padding: 0 !important;
+    width: 100%;
+    min-height: 60px; 
+}
+
+.date-section-item {
+    flex: 1; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 100%;
+}
+
+.date-input-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.full-height-divider {
+    width: 1.5px;
+    height: 100%;
+    background-color: #979494;
+    flex-shrink: 0;
+}
+
+.date-btn {
+    border: none;
+    background: none;
+    color: #5A5A5A;
+    font-size: 14px;
+    font-weight: 600;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Main CTA Button --- */
+.main-search-button {
+    background: #218EEA;
+    color: white;
+    border: none;
+    padding: 0 65px;
+    font-weight: 600;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.main-search-button:hover {
+    background: #1a76c5;
+}
+
+/* --- Scrollbar Logic --- */
+.hide-scrollbar {
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
+    -webkit-overflow-scrolling: touch; 
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 991px) {
+    .search-flex-row { 
+        flex-direction: column; 
+        height: auto; 
+        gap: 10px; 
+    }
+
+    .blue-divider-spacer { 
+        width: 100%; 
+        height: 0; 
+    }
+
+    .inner-input-box { 
+        padding: 22px 10px; 
+    }
+
+    .main-search-button { 
+        height: 70px; 
+        margin-left: 0 !important; 
+        width: 100%; 
+    }
+
+    .date-buttons-group { 
+        display: flex !important; 
+        width: 100%; 
+        justify-content: space-around; 
+    }
+
+    .swap-icon-btn { 
+        position: relative; 
+        margin: -25px auto; 
+        transform: rotate(90deg); 
+        border: 3px solid #01387C; 
+    }
+
+    .search-field { 
+        text-align: left; 
+    }
+
+    .date-input-container {
+        height: 70px !important; 
+        margin-top: 5px;
+    }
+    @media (max-width: 991px) {
+    /* 1. Prevent the container from being too cramped */
+    .date-input-container .inner-input-box {
+        display: flex !important;
+        flex-direction: row !important; /* Keep segments side-by-side */
+        justify-content: space-around;
+        padding: 0 5px !important; /* Reduced padding to give items more room */
+        height: 70px;
+    }
+
+    /* 2. Give each segment a minimum width so they don't touch */
+    .date-clickable-area, 
+    .date-btn-wrapper {
+        flex: 1 1 30%; /* Grow and shrink equally, aiming for 30% width */
+        min-width: 0;   /* Allows text to shrink if necessary without breaking layout */
+        padding: 0 4px;
+    }
+
+    /* 3. The Divider Fix: Ensure it has a fixed width and vertical space */
+    .full-height-divider {
+        width: 1.5px !important;
+        height: 70px !important; /* Shorter than the container so it doesn't touch top/bottom */
+        background-color: #979494;
+        flex-shrink: 0; /* Prevents the line from getting squashed to 0px */
+        align-self: center; /* Centers the line vertically */
+    }
+
+    /* 4. Adjust font size so text fits within the small segments */
+    .date-btn, 
+    .search-field {
+        font-size: 13px !important; 
+        white-space: nowrap; /* Prevents "Tomorrow" from wrapping to 2 lines */
+    }
+}
+
+    .date-section-item {
+        height: 70px;
+    }
+
+    /* Padding for mobile scroll to avoid clipping at the edges */
+    .overflow-auto {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+/* --- High-Resolution/Large Screen Fixes (1440px+) --- */
+@media (min-width: 1440px) {
+    /* Stabilize the outer container */
+    .search-box-figma-container {
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 15px; /* Slightly more breathing room inside the blue box */
+    }
+
+    /* Set explicit flex-basis for each section to prevent squashing */
+    .search-section {
+        flex: 1 1 300px; /* Ensures city inputs have at least 300px width */
+    }
+
+    /* Give the date container more priority so text doesn't wrap */
+    .date-input-container {
+        flex: 1 1 450px !important; 
+    }
+
+    /* Maintain the search button size */
+    .main-search-button {
+        flex: 0 0 auto;
+        padding: 0 60px;
+        min-width: 150px;
+    }
+
+    /* Prevent the inner segments of the date picker from shrinking too much */
+    .date-clickable-area {
+        flex: 1.5;
+    }
+
+    .date-btn-wrapper {
+        flex: 1;
+    }
+}
+
+/* Custom Dropdown Styling */
+.search-box-figma-container {
+  overflow: visible;
+}
+
+.search-section {
+  position: relative;
+  overflow: visible;
+}
+
+.suggestion-dropdown {
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0px 8px 24px rgba(0,0,0,0.12);
+  overflow-y: auto;
+  background-color: #ffffff;
+  z-index: 9999;
+  position: absolute;
+}/* Prevents the narrow column breakage */

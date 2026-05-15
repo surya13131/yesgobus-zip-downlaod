@@ -1,0 +1,221 @@
+/* Home.module.css */
+
+.banner {
+  background-color: rgba(20, 189, 243, 0.4); /* #14BDF3 at 40% opacity */
+  width: 100%;
+}
+
+.navyText {
+  color: #003366;
+}
+
+.bannerTitle {
+  color: #003366;
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+.bannerList {
+  color: #003366;
+  font-size: 1.1rem;
+  line-height: 2.2;
+}
+
+/* Gap-free Input Group with Inner Rounded Button */
+/* Home.module.css */
+
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 30px;
+  height: 54px;
+  padding: 0; 
+  overflow: hidden; 
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  width: 100%; /* Ensures it fills its container */
+  max-width: 500px; /* Adjust based on your design */
+  margin: 0 auto; /* Centers the search bar */
+}
+
+.mobileInput {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 15px; /* Reduced slightly for mobile comfort */
+  font-size: 16px; /* 16px prevents iOS from auto-zooming on focus */
+  flex: 1; 
+  height: 100%;
+  outline: none;
+  min-width: 0; /* Critical: allows flex-item to shrink below content size */
+}
+
+.getLinkBtn {
+  background: linear-gradient(180deg, #0E8FB8 0%, #064052 100%) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 0 30px 30px 0 !important; 
+  border: none !important;
+  height: 100%;
+  padding: 0 25px !important;
+  cursor: pointer;
+  white-space: nowrap; 
+  transition: all 0.3s ease;
+  flex-shrink: 0; /* Prevents the button from getting squashed */
+}
+
+.getLinkBtn:hover {
+  opacity: 0.9;
+  filter: brightness(1.1);
+}
+
+/* --- Mobile Specific Optimization --- */
+
+@media (max-width: 480px) {
+  .inputWrapper {
+    height: 48px; /* Taller touch targets are better for thumbs */
+  }
+  
+  .mobileInput {
+    padding: 0 12px;
+    font-size: 14px; /* Slightly smaller text for small screens */
+  }
+
+  .getLinkBtn {
+    padding: 0 15px !important;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* For ultra-small devices (like iPhone SE/Mini) */
+@media (max-width: 340px) {
+  .getLinkBtn {
+    padding: 0 10px !important;
+    font-size: 12px;
+  }
+}
+.bookFasterText {
+  color: #003366;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 18.3px;
+  line-height: 25px;
+  margin-top: 25px; /* Fixed gap from input box */
+}
+
+.storeImg {
+  height: 35px;
+  cursor: pointer;
+}
+
+
+
+.faqIcon {
+  margin-right: 15px;
+  font-size: 20px;
+  color: #14BDF3;
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+/* Optional: Rotate icon when accordion is open */
+:global(.accordion-button:not(.collapsed)) .faqIcon {
+  transform: rotate(45deg);
+  color: #003366;
+}
+
+/* Removes default Bootstrap blue highlight on click */
+.footerContainer {
+  /* Exact Figma gradient: #033564 to #14BDF3 */
+  background: linear-gradient(180deg, #033564 38%, #14BDF3 100%);
+  color: white;
+  font-family: sans-serif;
+}
+
+.footerHeader {
+  font-size: 18px;
+  /* Reduced font weight for all except the first one is handled via inline logic or class */
+  font-weight: 400; 
+  margin-bottom: 1.5rem;
+}
+
+.firstHeader {
+  color: #FFCC00 !important;
+  font-weight: 700 !important;
+}
+
+.subItem {
+  font-size: 14px;
+  opacity: 0.9;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  font-weight: 300; /* Reduced font width for subitems */
+  transition: opacity 0.3s ease;
+}
+
+.subItem:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.policyLink {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 300;
+  opacity: 0.9;
+  transition: 0.3s;
+}
+
+.policyLink:hover {
+  opacity: 1;
+  color: #FFCC00;
+}
+
+.socialIcon {
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.socialIcon:hover {
+  transform: scale(1.2);
+}
+
+.helpSection {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  /* Default padding for desktop, adjusted for mobile in media queries */
+  padding-right: 40px;
+}
+
+.copyrightBar {
+  background-color: #000;
+  padding: 15px 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991px) {
+  .helpSection {
+    padding-right: 0;
+    margin-top: 2rem;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 767px) {
+  .footerHeader {
+    font-size: 16px;
+    margin-top: 1rem;
+  }
+  .subItem {
+    font-size: 13px;
+  }
+}

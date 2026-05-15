@@ -1,0 +1,480 @@
+/* 1. IMPORTS & GOOGLE FONTS */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+/* 2. ROOT VARIABLES & GLOBAL STYLES */
+:root {
+  --yes-bg-blue: rgba(20, 189, 227, 0.5); 
+  --yes-navy: #003366;
+  --yes-btn-teal: #006D8A;
+  --yes-accent-cyan: #00BCD4;
+  --yes-orange: #FF5C23;
+  --yes-cream: #FFF9F3;
+  --yes-grey-light: #F5F2F2;
+  --yes-grey-medium: #E0DDDD;
+  --smooth-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+/* Global Width Control */
+.site-wrapper{
+  width:98%;
+  margin:0 auto; /* center horizontally */
+}
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif !important;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #333;
+}
+
+/* 3. NAVIGATION & LAYOUT */
+.navbar {
+  display: flex !important;
+  flex-direction: row !important;
+  transition: var(--smooth-transition);
+}
+
+.figma-nav-container {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* 4. TABLE STYLING (FIGMA MATCH) */
+.custom-table-wrapper {
+  border: 1px solid #1E1E1E;
+  border-radius: 28px;
+  overflow: hidden;
+  background-color: #ffffff;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+/* Table Header Gradient */
+.custom-table-header tr {
+  background: linear-gradient(180deg, #0860A3 0%, #03243D 100%);
+}
+
+.custom-table-header th {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 20px 15px !important;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+/* Zebra Rows & Smooth Hover */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: var(--yes-grey-light) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: var(--yes-grey-medium) !important;
+}
+
+.table tbody tr {
+  border-bottom: 6px solid #F1F1F1;
+  transition: var(--smooth-transition);
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  filter: brightness(0.95);
+  cursor: pointer;
+}
+
+/* Remove internal borders */
+.table td, .table th {
+  border: none !important;
+  vertical-align: middle;
+}
+
+.table > :not(caption) > * > * {
+  border-right: 0 !important;
+  border-left: 0 !important;
+  border-top: 0 !important;
+}
+
+/* Book Button Styling */
+.book-btn {
+  background-color: var(--yes-orange);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  border: none;
+  padding: 8px 20px;
+  font-weight: 600;
+  transition: var(--smooth-transition);
+}
+
+.book-btn:hover {
+  background-color: #e54b1a;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 92, 35, 0.3);
+}
+
+/* 5. WHY CHOOSE SECTION */
+.why-choose-section {
+  background: linear-gradient(90deg, #033564 0%, #00A8E8 100%);
+  color: white;
+  padding: 100px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-doodle-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.feature-item-container {
+  margin-bottom: 2.5rem;
+  transition: var(--smooth-transition);
+}
+
+.feature-icon-circle {
+  width: 55px;
+  height: 55px;
+  border: 1.8px solid #FFD700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: transparent;
+  transition: var(--smooth-transition);
+}
+
+.feature-item-container:hover .feature-icon-circle {
+  background: #FFD700;
+  color: #033564;
+  transform: rotateY(180deg);
+}
+
+/* 6. TOURISM & CARDS */
+.tourism-card {
+  transition: var(--smooth-transition);
+  border: 1px solid #E0E0E0;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.tourism-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+}
+
+/* 7. REVIEWS SECTION */
+.reviews-container {
+  background-color: #f8fbff;
+  padding: 80px 0;
+}
+
+.review-card {
+  background: var(--yes-cream);
+  border-radius: 25px; 
+  padding: 35px;
+  border: 1.5px solid #000000;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: var(--smooth-transition);
+}
+
+.review-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.star-rating {
+  color: #FFD700;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.verified-badge {
+  color: #8C8C8C;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 8. APP DOWNLOAD BANNER */
+.app-download-container {
+  background-color: #E0F4FF;
+  border-radius: 24px;
+  padding: 60px;
+  margin: 80px 0;
+  transition: var(--smooth-transition);
+}
+
+.yesgobus-banner {
+  background-color: var(--yes-bg-blue);
+  border-radius: 20px;
+  padding: 40px;
+}
+
+.banner-title {
+  color: var(--yes-navy);
+  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+.custom-input-group input {
+  border-radius: 12px 0 0 12px;
+  border: none;
+  padding: 15px 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.btn-get-link {
+  background-color: var(--yes-btn-teal);
+  color: white;
+  font-weight: 700;
+  border-radius: 0 12px 12px 0;
+  border: none;
+  padding: 0 30px;
+  transition: var(--smooth-transition);
+}
+
+.qr-wrapper {
+  background: white;
+  padding: 12px;
+  display: inline-block;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* 9. FAQ ACCORDION CUSTOMIZATION */
+.faq-tab-btn {
+  border: none;
+  font-weight: 700;
+  color: #777;
+  padding: 15px 25px;
+  background: transparent;
+  transition: var(--smooth-transition);
+}
+
+.faq-tab-btn.active {
+  color: var(--yes-navy);
+  border-bottom: 4px solid var(--yes-accent-cyan);
+}
+
+.custom-faq-btn {
+  color: var(--yes-navy) !important;
+  font-weight: 700;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 20px 0;
+  font-size: 1.1rem;
+}
+
+.custom-faq-btn::after {
+  content: "+";
+  background-image: none !important;
+  color: var(--yes-accent-cyan);
+  font-size: 2rem;
+  font-weight: 300;
+  transition: transform 0.3s ease;
+}
+
+.custom-faq-btn:not(.collapsed)::after {
+  content: "−";
+  color: var(--yes-navy);
+  transform: rotate(180deg);
+}
+
+/* 10. MEDIA QUERIES (RESPONSIVE ENGINE) */
+
+/* Desktop & Large Screens */
+@media (min-width: 1200px) {
+  .container { max-width: 1140px; }
+}
+
+/* Tablet / IPad View (992px to 768px) */
+@media (max-width: 992px) {
+  .banner-title { font-size: 2rem; }
+  .app-download-container { padding: 40px; }
+  .feature-item-container { margin-bottom: 1.5rem; }
+}
+
+/* Mobile View (767px and below) */
+@media (max-width: 767px) {
+  .why-choose-section { padding: 60px 0; }
+  
+  /* Make table scrollable on mobile */
+  .custom-table-wrapper {
+    overflow-x: auto;
+    border-radius: 15px;
+  }
+  
+  .table {
+    min-width: 600px; /* Forces scroll to preserve layout */
+  }
+
+  .banner-title {
+    font-size: 1.75rem;
+    text-align: center;
+  }
+
+  .banner-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+  }
+
+  .app-download-container {
+    padding: 30px 20px;
+    margin: 40px 15px;
+    text-align: center;
+  }
+
+  .custom-input-group {
+    flex-direction: column;
+  }
+
+  .custom-input-group input, 
+  .btn-get-link {
+    border-radius: 12px !important;
+    width: 100%;
+    margin-bottom: 10px;
+    height: 50px;
+  }
+
+  .qr-wrapper {
+    margin-top: 20px;
+  }
+
+  .feature-item-container {
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .feature-icon-circle {
+    margin-bottom: 15px;
+  }
+
+  .review-card {
+    margin-bottom: 20px;
+    padding: 25px;
+  }
+  
+  .figma-nav-container {
+    flex-direction: column !important;
+    gap: 15px;
+  }
+}
+
+/* Ultra Small Devices */
+@media (max-width: 480px) {
+  .banner-title { font-size: 1.5rem; }
+  .why-choose-section { padding: 40px 0; }
+  .review-card { padding: 20px; }
+}
+
+/* 11. SMOOTHNESS ENHANCEMENTS */
+.btn, .card, .nav-link, .accordion-button {
+  cursor: pointer;
+  outline: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--yes-navy);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--yes-btn-teal);
+}
+/* --- GLOBAL LAYOUT STABILIZER --- */
+
+/* 1. Use this as a wrapper for every section on every page */
+.page-section-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    overflow: hidden; /* Prevents horizontal scroll breaking */
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* 2. This creates the "anchor" that keeps content from drifting */
+.content-shaper {
+    max-width: 1420px; /* This matches your search box width */
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* 3. Global Responsive Image Fix */
+img:not([data-nimg]) {
+  max-width: 100%;
+  height: auto;
+}
+.large-screen-container{
+  width:100%;
+  margin:0 auto;
+}
+
+/* Apply max width only on very large screens */
+@media (min-width:1442px){
+  .large-screen-container{
+    max-width:1800px;
+  }
+}
+
+
+.reviews-slider {
+  display: flex;
+  gap: 25px;
+  width: max-content;
+  animation: reviewScroll 30s linear infinite;
+}
+
+.review-slide {
+  min-width: 320px;
+  max-width: 350px;
+  flex-shrink: 0;
+}
+
+@keyframes reviewScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
