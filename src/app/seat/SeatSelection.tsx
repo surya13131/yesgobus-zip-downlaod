@@ -77,6 +77,7 @@ interface Step1Props {
 type SeatWithGrid = NormalizedSeat & {
   gridRow?: number;
   allSleeperRow?: boolean;
+  shouldAlignToBottom?: boolean;
   totalSeatsInRow?: number;
   isLastRow?: boolean;
 };
@@ -123,17 +124,27 @@ const RenderSeat = React.memo(function RenderSeat({
     );
   }
 
-  const isShifted = !isVrl && seat.isRotated === true;
+  const normalizedBusType = String(busType || "").toLowerCase();
+  const isMixedBus =
+    normalizedBusType.includes("sleeper/seater") ||
+    normalizedBusType.includes("semi sleeper") ||
+    normalizedBusType.includes("semi-sleeper") ||
+    (normalizedBusType.includes("sleeper") && normalizedBusType.includes("seater"));
+
+  const isHorizontalSeat =
+    !isVrl &&
+    (seat.isRotated || isForcedRotateSeat);
   
   const gridRowValue = isLegend
     ? "auto"
-    : isShifted
-    ? `${seat.gridRow}`   // ✅ NO SPAN
+    : isHorizontalSeat && isMixedBus
+    ? `${seat.gridRow}`
     : seat.isSleeper
     ? `${seat.gridRow} / span 2`
+    : seat.shouldAlignToBottom
+    ? `${seat.gridRow! + 1}`
     : `${seat.gridRow}`;
   let seatImg: any = null;
-
   if (seat.isSleeper) {
     if (isSeatSelected) {
       seatImg = selectedSleeper;
@@ -160,22 +171,6 @@ const RenderSeat = React.memo(function RenderSeat({
     }
   }
 
-  const normalizedBusType = String(busType || "").toLowerCase();
-  const isMixedBus =
-    normalizedBusType.includes("sleeper/seater") ||
-    normalizedBusType.includes("semi sleeper") ||
-    normalizedBusType.includes("semi-sleeper") ||
-    (normalizedBusType.includes("sleeper") && normalizedBusType.includes("seater"));
-
-  const isNationalTravels = operatorName?.toLowerCase().includes("national");
-  const allowHorizontalLastRow = !isMixedBus || isNationalTravels;
-
-  const isLastRowSingleOrDouble =
-    !isVrl &&
-    seat.isSleeper &&
-    seat.isRotated === true &&
-    allowHorizontalLastRow;
-
   return (
     <div
       onClick={() => handleSeatClick(seat)}
@@ -188,12 +183,12 @@ const RenderSeat = React.memo(function RenderSeat({
         position: "relative",
         width: isLegend
           ? "32px"
-          : isLastRowSingleOrDouble
+          : isHorizontalSeat
           ? "72px"
           : "42px",
         height: isLegend
           ? (seat.isSleeper ? "64px" : "32px")
-          : isLastRowSingleOrDouble
+          : isHorizontalSeat
           ? "42px"
           : seat.isSleeper
           ? "82px"
@@ -210,8 +205,8 @@ const RenderSeat = React.memo(function RenderSeat({
       {seatImg && (
         <div
           style={{
-            width: isLastRowSingleOrDouble ? "72px" : "100%",
-            height: isLastRowSingleOrDouble ? "42px" : "100%",
+            width: isHorizontalSeat ? "72px" : "100%",
+            height: isHorizontalSeat ? "42px" : "100%",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -221,10 +216,10 @@ const RenderSeat = React.memo(function RenderSeat({
             src={seatImg.src || seatImg}
             alt={`Seat ${seat.id}`}
             style={{
-              width: isLastRowSingleOrDouble ? "42px" : "100%",
-              height: isLastRowSingleOrDouble ? "82px" : "100%",
+              width: isHorizontalSeat ? "42px" : "100%",
+              height: isHorizontalSeat ? "82px" : "100%",
               objectFit: "contain",
-              transform: isLastRowSingleOrDouble ? "rotate(90deg)" : "none",
+              transform: isHorizontalSeat ? "rotate(90deg)" : "none",
             }}
           />
         </div>
@@ -239,17 +234,17 @@ const RenderSeat = React.memo(function RenderSeat({
             pointerEvents: "none",
             zIndex: 2,
 
-            position: isLastRowSingleOrDouble ? "absolute" : "static",
+            position: isHorizontalSeat ? "absolute" : "static",
 
             // 👉 LEFT SIDE
-            left: isLastRowSingleOrDouble ? "-20px" : "0",
-            top: isLastRowSingleOrDouble ? "50%" : "auto",
+            left: isHorizontalSeat ? "-20px" : "0",
+            top: isHorizontalSeat ? "50%" : "auto",
 
             // 👉 CENTER vertically
-            transform: isLastRowSingleOrDouble ? "translateY(-50%)" : "none",
+            transform: isHorizontalSeat ? "translateY(-50%)" : "none",
 
             // 🔥 THIS IS THE MAGIC
-            writingMode: isLastRowSingleOrDouble ? "vertical-rl" : "horizontal-tb",
+            writingMode: isHorizontalSeat ? "vertical-rl" : "horizontal-tb",
             textOrientation: "mixed",
 
             textAlign: "center",
@@ -261,20 +256,19 @@ const RenderSeat = React.memo(function RenderSeat({
       )}
     </div>
   );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.seat.id === nextProps.seat.id &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.isLegend === nextProps.isLegend &&
-    prevProps.forceSelected === nextProps.forceSelected &&
-    prevProps.seat.isAvailable === nextProps.seat.isAvailable &&
-    prevProps.seat.isLadies === nextProps.seat.isLadies &&
-    prevProps.seat.isMale === nextProps.seat.isMale &&
-    prevProps.operatorName === nextProps.operatorName && // The operatorName is already passed
-    prevProps.provider === nextProps.provider && // Added provider to deps
-    prevProps.busType === nextProps.busType
-  );
-});
+}, (prevProps, nextProps) => (
+  prevProps.seat.id === nextProps.seat.id &&
+  prevProps.isSelected === nextProps.isSelected &&
+  prevProps.isLegend === nextProps.isLegend &&
+  prevProps.forceSelected === nextProps.forceSelected &&
+  prevProps.seat.isAvailable === nextProps.seat.isAvailable &&
+  prevProps.seat.isLadies === nextProps.seat.isLadies &&
+  prevProps.seat.isMale === nextProps.seat.isMale &&
+  prevProps.seat.shouldAlignToBottom === nextProps.seat.shouldAlignToBottom &&
+  prevProps.operatorName === nextProps.operatorName &&
+  prevProps.provider === nextProps.provider &&
+  prevProps.busType === nextProps.busType
+));
 
 export default function Step1SeatSelection({
   isLoading,
@@ -497,6 +491,11 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
   const computeVisualGrid = (deckSeats: NormalizedSeat[], isVrl: boolean = false): SeatWithGrid[] => {
     if (!deckSeats || deckSeats.length === 0) return [];
 
+    // Check if the deck has exactly one seater and the rest are sleepers.
+    const seaterCount = deckSeats.filter(s => !s.isSleeper).length;
+    const sleeperCount = deckSeats.filter(s => s.isSleeper).length;
+    const isSingleSeaterMixedBus = seaterCount === 1 && sleeperCount > 0;
+
     if (isVrl) {
       // For VRL, we trust API coordinates but must compress them to avoid large visual gaps.
       // 1. Compress columns to create a standard aisle.
@@ -625,32 +624,28 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
     
     // ✅ ONLY sleeper seats
     const lastRowSleepers = lastRowSeats.filter(s => s.isSleeper);
-    const rotatedSleepers = colNormalized.filter(s => s.isRotated && s.isSleeper);
+    const rotatedSeats = colNormalized.filter(s => lastSeats.includes(s.id));
     
     const shiftedSeatIds = new Set<string>();
 
-    const allowCenterShift = !isVrl && (!isMixedGrid || operatorName?.toLowerCase().includes("national"));
+    const allowCenterShift = !isVrl;
 
-    if (rotatedSleepers.length > 0 && allowCenterShift) {
+    if (rotatedSeats.length > 0 && allowCenterShift) {
       colNormalized = colNormalized.map(seat => {
-        if (rotatedSleepers.some(s => s.id === seat.id)) {
+        if (rotatedSeats.some(s => s.id === seat.id)) {
           shiftedSeatIds.add(seat.id);
-
-          const index = rotatedSleepers.findIndex(s => s.id === seat.id);
+          // ✅ SAME LOGIC FOR PURE + MIXED SLEEPER
+          const index = rotatedSeats.findIndex(s => s.id === seat.id);
 
           return {
             ...seat,
-            // ✅ move to next rows
             row: maxRow + index + 1,
-            // ✅ BOTH sleepers at col: 1 so they align perfectly over the aisle
-            col: 1,
+            col: 1, // center
           };
         }
-
         return seat;
       });
     }
-
     // 4. Map absolute API rows → safe CSS Grid rows
     const sortedRows = [...new Set(colNormalized.map(s => s.row))].sort((a, b) => a - b);
     const rowMap = new Map<number, number>();
@@ -661,6 +656,7 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
 
     sortedRows.forEach(apiRow => {
       const seatsInRow = colNormalized.filter(s => s.row === apiRow);
+      const hasSleeperInRow = seatsInRow.some(s => s.isSleeper);
       const allSleepers =
         provider !== "VRL" &&
         seatsInRow.length > 0 &&
@@ -675,15 +671,12 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
         sortedRows.includes(apiRow + 1)
       ) {
         const nextRowSeats = colNormalized.filter(s => s.row === apiRow + 1);
-
         const nextRowHasSeaters = nextRowSeats.some(s => !s.isSleeper);
-
         const sleeperCols = new Set(
           seatsInRow
             .filter(s => s.isSleeper)
             .map(s => s.col)
         );
-
         const actualCollision = nextRowSeats.some(
           s => sleeperCols.has(s.col)
         );
@@ -696,18 +689,11 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
       
       // For Durgamba lower deck mixed bus, the first row (door) is just a single sleeper.
       // We shouldn't jump 2 grid rows for it, otherwise it creates a huge gap to the next sleeper.
+      const isLowerDeck = deckSeats.length > 0 && !deckSeats[0].isUpper;
       if (isDurgamba && busType?.toLowerCase().includes("sleeper") && busType?.toLowerCase().includes("seater")) {
-          const isLowerDeck = seatsInRow.length > 0 && !seatsInRow[0].isUpper;
-          if (isLowerDeck && allSleepers && apiRow === 0) {
-              treatAsAllSleeper = false;
-              const nextRowSeats = colNormalized.filter(s => s.row === apiRow + 1);
-              const sleeperCols = new Set(seatsInRow.filter(s => s.isSleeper).map(s => s.col));
-              const hasCollision = nextRowSeats.some(s => sleeperCols.has(s.col));
-              
-              if (!hasCollision) {
-                  treatAsAllSleeper = false;
-              }
-          }
+        if (isLowerDeck && allSleepers && apiRow === 0) {
+          treatAsAllSleeper = false;
+        }
       }
 
       rowMap.set(apiRow, currentGridRow);
@@ -721,7 +707,6 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
       const shouldExpandRow =
         treatAsAllSleeper &&
         !isShiftedRow &&
-        !isMixedVrl &&
         provider !== "VRL";
 
       currentGridRow += shouldExpandRow ? 2 : 1;
@@ -734,24 +719,30 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
     });
     const maxRowVal = Math.max(...colNormalized.map(s => s.row));
 
-    return colNormalized.map(seat => ({
-      ...seat,
-      gridRow: rowMap.get(seat.row)!,
-      allSleeperRow: rowIsAllSleeper.get(seat.row) ?? false,
-      totalSeatsInRow: rowCounts[seat.row],
-      isLastRow: shiftedSeatIds.has(seat.id) || seat.row === maxRowVal,
-    }));
+    return colNormalized.map(seat => {
+      const seatsInSameRow = colNormalized.filter(s => s.row === seat.row);
+      const rowHasSleeper = seatsInSameRow.some(s => s.isSleeper);
+
+      return {
+        ...seat,
+        gridRow: rowMap.get(seat.row)!,
+        allSleeperRow: rowIsAllSleeper.get(seat.row) ?? false,
+        shouldAlignToBottom: isSingleSeaterMixedBus && !seat.isSleeper && rowHasSleeper,
+        totalSeatsInRow: rowCounts[seat.row],
+        isLastRow: shiftedSeatIds.has(seat.id) || seat.row === maxRowVal,
+      };
+    });
   };
 
   // ✅ Process both decks through the visual grid formatter
   const normalizedLowerDeckSeats = useMemo(
-    () => computeVisualGrid(lowerDeckSeats, isVrl),
-    [computeVisualGrid, lowerDeckSeats, isVrl]
+    () => computeVisualGrid(lowerDeckSeats, isVrl), // isLowerDeck is inferred inside
+    [lowerDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
   );
 
   const normalizedUpperDeckSeats = useMemo(
-    () => computeVisualGrid(upperDeckSeats, isVrl),
-    [computeVisualGrid, upperDeckSeats, isVrl]
+    () => computeVisualGrid(upperDeckSeats, isVrl), // isLowerDeck is inferred inside
+    [upperDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
   );
 
 const maxCol = isHard49SeaterBus
@@ -1610,8 +1601,7 @@ const maxCol = isHard49SeaterBus
                 ) : (
                   <div
                     className="p-4 text-center text-muted mt-2 border rounded w-100"
-                    style={{ fontSize: "13px" }}
-                  >
+                    style={{ fontSize: "13px" }}>
                     Route map details are currently unavailable for this
                     journey.
                   </div>
