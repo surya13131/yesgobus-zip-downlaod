@@ -139,6 +139,8 @@ const RenderSeat = React.memo(function RenderSeat({
     ? "auto"
     : isHorizontalSeat && isMixedBus
     ? `${seat.gridRow}`
+    : isHorizontalSeat
+    ? `${seat.gridRow} / span 1`
     : seat.isSleeper
     ? `${seat.gridRow} / span 2`
     : seat.shouldAlignToBottom
