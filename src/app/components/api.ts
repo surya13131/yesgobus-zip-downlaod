@@ -1,9 +1,8 @@
 import { cityMapping } from "./cityMapping";
 
-// ✅ Standard Base URL (Hits Production for Auth, City Search, VRL, and SRS)
-const BASE_URL = "";
-const EZEE_BASE_URL = "/ezee";
 
+const BASE_URL = "https://apis.yesgobus.com";
+const EZEE_BASE_URL = "https://test.yesgobus.com";
 const CACHE_TTL_BUS_LIST = 3 * 60 * 1000; // 3 minutes
 const CACHE_TTL_SEAT_LAYOUT = 2 * 60 * 1000; // 2 minutes
 const CACHE_TTL_CITY = 10 * 60 * 1000; // 10 minutes
@@ -53,7 +52,6 @@ const extractValidPrice = (bus: any): number => {
   return 0;
 };
 
-/* ---------------- AUTH ---------------- */
 
 export const requestLoginOtp = async (mobileNumber: string) => {
   const res = await fetch(`${BASE_URL}/api/user/signin?mobile=${mobileNumber}`, {

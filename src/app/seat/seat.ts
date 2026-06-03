@@ -19,6 +19,9 @@ export interface NormalizedSeat {
   isSleeper: boolean;
   fare: number;
   isRotated?: boolean;
+  orientation?: number;
+  seatType?: string;
+  shouldCenterInSleeperSlot?: boolean;
 }
 const fullDecodeBusType = (raw: string): string => {
   if (!raw || raw === "undefined" || raw === "null") return "";
@@ -528,6 +531,19 @@ export const fixBrokenSeatLayout = (
   if (!seats || seats.length === 0) return seats;
   if (!["VRL", "SRS", "EZEE_V2", "EZEE_V3"].includes(provider)) return seats;
 
+  const busTypeStr = String(busType || "").toUpperCase().replace(/\s+/g, " ").trim();
+  if (busTypeStr.includes("2+3") || busTypeStr.includes("2-3")) {
+    console.log("[Layout] 2+3 bus detected - skipping repair");
+    return seats;
+  }
+
+  // For EZEE, the API coordinates are trusted. Bypass all complex layout repair logic
+  // to prevent column compression and other destructive transformations that remove the aisle.
+  if (provider === "EZEE_V2" || provider === "EZEE_V3") {
+    console.log("[Layout] EZEE provider detected. Bypassing all layout repair logic.");
+    return seats;
+  }
+
   if (provider === "VRL") {
     const normalizedBusType = String(busType || "").toLowerCase();
     const isMixedBus =
@@ -575,8 +591,28 @@ export const fixBrokenSeatLayout = (
       is22Bus = true;
     }
 
-    if (is22Bus && !isMixedBus && seats.some(s => /^[A-Z]\d+/.test(s.id))) {
-      console.log("[Layout] SRS 2+2 layout detected. Enforcing deterministic grid from seat letters.");
+    const letterPrefixes = [
+      ...new Set(
+        seats
+          .map(s => String(s.id).trim().charAt(0).toUpperCase())
+          .filter(c => /[A-Z]/.test(c))
+      ),
+    ];
+
+    // Heuristic for row-based alphabet layouts (A1, B1, C1...):
+    // - There should be several different starting letters (>= 4).
+    // - It should not be a layout using L/R for Left/Right.
+    const isAlphabetRows =
+      letterPrefixes.length >= 4 &&
+      !letterPrefixes.includes("L") &&
+      !letterPrefixes.includes("R");
+
+    if (is22Bus && !isMixedBus && isAlphabetRows) {
+      console.log(
+        `[Layout] SRS 2+2 alphabet-row layout detected (prefixes: ${letterPrefixes.join(
+          ", "
+        )}). Enforcing deterministic grid from seat letters.`
+      );
       const formattedSeats = seats.map(seat => {
         const seatId = String(seat.id).trim().toUpperCase();
         const rowLetter = seatId.charAt(0);
@@ -602,8 +638,8 @@ export const fixBrokenSeatLayout = (
       });
       return normalizeSeatCoordinates(formattedSeats);
     }
-  }
-
+  
+}
 // ─────────────────────────────────────────────
 // Fix: bottom floating seats
 // ─────────────────────────────────────────────
@@ -714,7 +750,7 @@ if (isMixedSleeperSeaterBus(busType)) {
       return compressColumns(deckSeats);
     }
 
-if (is21SleeperBus(busType))  {
+if (is21SleeperBus(busType) && provider !== "EZEE_V2" && provider !== "EZEE_V3")  {
       console.warn(`[Layout] ${label} deck appears to be 2+1 sleeper; enforcing 21 column template`);
       return force21SleeperColumns(deckSeats);
     }
@@ -796,7 +832,7 @@ const applyBusTypeRules = (
       seat.isUpper || /^U\d|^UB\d|UPPER|USL|SU/i.test(seatName);
 
     const isSleeperByName =
-      /^L\d+|^U\d+|LB|UB|SL|SU|USL|LSL|LOWER|UPPER|BERTH/i.test(seatName);
+      /^L\d+|^U\d+|LB|UB|SB|SL|SU|USL|LSL|LOWER|UPPER|BERTH/i.test(seatName);
 
     const isSleeperBySize = width > 1 || height > 1 || length > 1;
 
@@ -807,9 +843,9 @@ const applyBusTypeRules = (
 
     // ✅ FIX: Force all seats in a 2+2 normal bus to be seaters
     const isTrueMixedLayout = busTypeStr.includes("SLEEPER") && busTypeStr.includes("SEATER");
-    if (is22Bus && !isTrueMixedLayout) {
-      isSleeper = false;
-    }
+  if (is22Bus && !isTrueMixedLayout && !isSleeperByName) {
+  isSleeper = false;
+}
 
     return { ...seat, isSleeper, isUpper };
   });
@@ -989,10 +1025,16 @@ export const fetchSeatLayoutData = async ({
 
       const validRawSeats = rawSeatArray.filter((seat: any) => {
         if (!seat || typeof seat !== "object") return false;
+        // Per EZEE docs, filter out non-passenger layout blocks.
+        const busSeatTypeCode = seat.busSeatType?.code;
+        if (["FRS"].includes(busSeatTypeCode)) { // keep RRM and PTY to render icons
+          return false;
+        }
+
         const status = String(seat.seatStatus || seat.status || "").toUpperCase();
         const type   = String(seat.seatType   || seat.type   || "").toUpperCase();
         if (status === "NA" || type === "NA") return false;
-        if (/DRIVER|CABIN|DOOR|SPACE|TOILET/i.test(
+        if (/DRIVER|CABIN|DOOR|SPACE|TOILET|ATTENDER|HELPER|STAFF/i.test(
           String(seat.seatCode || seat.seatName || seat.seatNo || "")
         )) return false;
         return true;
@@ -1021,43 +1063,7 @@ export const fetchSeatLayoutData = async ({
 
       console.log("[EZEE seat.ts] Fallback fare:", fallbackFare);
 
-      fetchedSeats = validRawSeats.map((seat: any, index: number) => {
-        const seatId =
-          seat.seatCode   || seat.seatName   || seat.seatNo ||
-          seat.seatNumber || seat.id         || `S${index + 1}`;
-
-        const seatName = String(seatId).toUpperCase().trim();
-        const seatCode = seatName.replace(/[0-9]/g, "");
-
-        const rawRow = Number(
-          seat.colPos ?? seat.col    ?? seat.Column ?? seat.colNo  ??
-          seat.colNum ?? seat.x      ?? seat.posX   ?? 0
-        );
-        const rawCol = Number(
-          seat.rowPos ?? seat.row    ?? seat.Row    ?? seat.rowNo  ??
-          seat.rowNum ?? seat.y      ?? seat.posY   ?? 0
-        );
-
-        const isUpperDeck =
-          seat.deckType  === "UPPER" || seat.deck      === "UPPER" ||
-          seat.isUpper   === true    || seat.upperDeck === true    ||
-          seat.level     === 2       || seat.floor     === 2       ||
-          seat.berthType === "UPPER" ||
-          /^U\d+|^UB\d+|^USU\d+/i.test(seatName);
-
-        const isSleeperByCode = [
-          "DLB","DUB","SLB","SUB",
-          "LB","UB","SL","SU",
-          "USL","LSL","USU",
-          "BERTH",
-        ].includes(seatCode);
-
-        const isSleeperById =
-          /^[0-9]+$/.test(seatName) ||
-          /^[A-Z]$/.test(seatName) ||
-          isSleeperByCode ||
-          seatName.length > 2;
-
+      fetchedSeats = validRawSeats.map((seat: any) => {
         const isAvailable =
           seat.isAvailable !== false &&
           seat.available   !== false &&
@@ -1065,15 +1071,13 @@ export const fetchSeatLayoutData = async ({
           String(seat.seatStatus || seat.status || "A").toUpperCase() !== "B" &&
           String(seat.seatStatus || seat.status || "A").toUpperCase() !== "BOOKED";
 
-        const fare = extractSeatFare(seat) || fallbackFare;
-
         const isLadiesSeat =
           seat.isLadies === true ||
           String(seat.isLadies).toLowerCase() === "true" ||
           ["F", "FEMALE", "LADIES"].includes(String(seat.gender).trim().toUpperCase()) ||
           ["F", "FEMALE", "LADIES"].includes(String(seat.seatGender).trim().toUpperCase()) ||
           ["F", "FEMALE", "LADIES"].includes(String(seat.passengerSex).trim().toUpperCase());
-
+ 
         const isMaleSeat =
           seat.isMale === true ||
           String(seat.isMale).toLowerCase() === "true" ||
@@ -1082,23 +1086,56 @@ export const fetchSeatLayoutData = async ({
           ["M", "MALE", "GENTS"].includes(String(seat.passengerSex).trim().toUpperCase()) ||
           (!isAvailable && !isLadiesSeat);
 
+        const seatName = String(seat.seatName || "").toUpperCase().trim();
+        const ezeeSeatCode = String(seat.busSeatType?.code || "").trim().toUpperCase();
+        const ezeeSeatName = String(seat.busSeatType?.name || "").trim().toUpperCase();
+
+        // For EZEE, the `busSeatType.code` is the single source of truth for seat type,
+        // based on the official EZEE documentation.
+        // Sleeper codes: SL, LSL, USL, SLSL, SUSL, WSL.
+        // Seater codes: ST, PB, SS, etc.
+        const isSleeper =
+          ["SL", "LSL", "USL", "SLSL", "SUSL", "WSL"].includes(ezeeSeatCode);
+
         return {
-          id:          String(seatId),
-          row:         Number.isNaN(rawRow) ? 0 : rawRow,
-          col:         Number.isNaN(rawCol) ? 0 : rawCol,
-          isUpper:     isUpperDeck,
+          id:          String(seat.seatName),
+          row:         Number(seat.colPos ?? 0),
+          col:         Number(seat.rowPos ?? 0),
+          isUpper:     seat.layer === 2,
           isAvailable,
           isLadies:    isLadiesSeat,
           isMale:      isMaleSeat,
-          isSleeper:   seat.isSleeper === true || isSleeperById,
-          fare,
+          isSleeper,
+          fare:        extractSeatFare(seat) || fallbackFare,
+          orientation: Number(seat.orientation ?? 0),
+          isRotated:   Number(seat.orientation ?? 0) === 1,
+          seatType:    ezeeSeatCode,
         } as NormalizedSeat;
       });
 
-      // ── Trust-But-Verify pipeline ────────────────────────────────────────
-      fetchedSeats = normalizeSeatCoordinates(fetchedSeats);
-      fetchedSeats = fixBrokenSeatLayout(provider, fetchedSeats, detectedBusType);
-      fetchedSeats = applyBusTypeRules(fetchedSeats, detectedBusType);
+      // For EZEE mixed layouts, if a row contains a sleeper, all seaters in that
+      // row must also reserve sleeper-height space to prevent visual collapse.
+      const rowsWithSleepers = new Set<number>();
+      fetchedSeats.forEach(seat => {
+        if (seat.isSleeper) rowsWithSleepers.add(seat.row);
+      });
+
+      fetchedSeats = fetchedSeats.map(seat => {
+        if (!seat.isSleeper && rowsWithSleepers.has(seat.row)) {
+          return { ...seat, shouldCenterInSleeperSlot: true };
+        }
+        return seat;
+      });
+
+      console.log("[EZEE seat.ts] Parsed deck seats for UI:");
+      console.table(
+        fetchedSeats.map(s => ({
+          id: s.id,
+          row: s.row,
+          col: s.col,
+          sleeper: s.isSleeper
+        }))
+      );
     }
   }
 
@@ -1328,7 +1365,7 @@ export const fetchSeatLayoutData = async ({
                   String(seat.IsLadiesSeat).toLowerCase() === "true" || ladiesSet.has(seatId) || ladiesBookedSet.has(seatId),
                 isMale:      seat.IsMaleSeat   === "Y" ||
                   String(seat.IsMaleSeat).toLowerCase() === "true" || maleSet.has(seatId) || maleBookedSet.has(seatId),
-                isSleeper:   seat.SeatType === 2 || /L\d|U\d|LB\d|UB\d/i.test(seatId),
+                isSleeper:   seat.SeatType === 2 || /L\d|U\d|LB\d|UB\d|SB/i.test(seatId),
                 fare:        Number(seat.SeatRate || seat.fare || basePrice || 0),
                 isRotated:   lastSeatsSet.has(seatId),
               } as NormalizedSeat;
@@ -1367,7 +1404,8 @@ export const fetchSeatLayoutData = async ({
               const price       = isAvailable ? availableMap.get(seatId)! : (basePrice || 0);
               const isSleeper   =
                 typeCode.includes("L") || typeCode.includes("U") ||
-                typeCode.includes("Sleeper") || typeCode.includes("SL");
+                typeCode.includes("Sleeper") || typeCode.includes("SL") ||
+                typeCode.includes("SB") || /SB/i.test(seatId);
               const isUpper = isGarula
                 ? seatId.toUpperCase().startsWith("U")
                 : (
@@ -1404,6 +1442,25 @@ export const fetchSeatLayoutData = async ({
       const rawUpper = parseCoachString(layoutData.upper_coach_details, true,  0);
 
       fetchedSeats = [...rawLower, ...rawUpper];
+
+      // ✅ National Travels NTS-103A Override
+      const isNTS103A =
+        srsResult?.id === "202605302280612" &&
+        srsResult?.service_name === "National Travels(nts)";
+
+      if (isNTS103A) {
+        console.log("[Layout] Applying override for National Travels NTS-103A (ID: 202605302280612)");
+        fetchedSeats = fetchedSeats.map(seat => {
+          const id = seat.id.toUpperCase();
+          return {
+            ...seat,
+            // ONLY SU / SL are sleeper berths
+            isSleeper: id.startsWith("SU") || id.startsWith("SL"),
+            // Upper deck seats are SU* or U*
+            isUpper: id.startsWith("SU") || /^U\d+$/.test(id),
+          };
+        });
+      }
 
       // ── Trust-But-Verify pipeline ────────────────────────────────────────
       fetchedSeats = normalizeSeatCoordinates(fetchedSeats);

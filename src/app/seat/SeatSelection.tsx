@@ -15,6 +15,7 @@ import bookedFemaleSeater from "../components/assest/bookedfemalesingle.png";
 import bookedFemaleSleeper from "../components/assest/bookedfemalesleeper.png";
 import bookedMaleSeater from "../components/assest/bookedbymalesingle.png";
 import bookedMaleSleeper from "../components/assest/bookedbymalesleeper.png";
+import restroomIcon from "../components/assest/restroomSleeper.png";
 
 const TIME_REGEX = /\b((1[0-2]|0?[1-9]):([0-5][0-9])\s*([AaPp][Mm])?|(?:[01]?[0-9]|2[0-3]):[0-5][0-9])\b/g;
 const TIME_REGEX_SINGLE = /\b((1[0-2]|0?[1-9]):([0-5][0-9])\s*([AaPp][Mm])?|(?:[01]?[0-9]|2[0-3]):[0-5][0-9])\b/;
@@ -78,8 +79,12 @@ type SeatWithGrid = NormalizedSeat & {
   gridRow?: number;
   allSleeperRow?: boolean;
   shouldAlignToBottom?: boolean;
+  shouldCenterInSleeperSlot?: boolean;
   totalSeatsInRow?: number;
   isLastRow?: boolean;
+  isInMixedEzeeColumn?: boolean;
+  ezeeNeedsSleeperSlot?: boolean;
+  ezeeAlignToBottom?: boolean;
 };
 
 interface RenderSeatProps {
@@ -135,19 +140,33 @@ const RenderSeat = React.memo(function RenderSeat({
     !isVrl &&
     (seat.isRotated || isForcedRotateSeat);
   
+  const isInMixedEzeeColumn = (seat as any).isInMixedEzeeColumn;
+  const ezeeNeedsSleeperSlot = (seat as any).ezeeNeedsSleeperSlot;
+  const ezeeAlignToBottom = (seat as any).ezeeAlignToBottom;
+  const shouldUseSleeperSlot = seat.isSleeper || seat.shouldCenterInSleeperSlot || ezeeNeedsSleeperSlot;
+
+  const upperId = String(seat.id).toUpperCase();
+  const isRestRoom = ["RRM", "REME", "RM", "RESTROOM", "WASHROOM"].includes(upperId) || (seat as any).isRestRoom || (seat as any).seatType === "RRM";
+  const isEmptySpace = ["FRS", "EMPTY"].includes(upperId);
+  const isPantry = ["PTY", "PANTRY"].includes(upperId);
+
   const gridRowValue = isLegend
     ? "auto"
     : isHorizontalSeat && isMixedBus
     ? `${seat.gridRow}`
     : isHorizontalSeat
     ? `${seat.gridRow} / span 1`
-    : seat.isSleeper
+    : shouldUseSleeperSlot
     ? `${seat.gridRow} / span 2`
     : seat.shouldAlignToBottom
     ? `${seat.gridRow! + 1}`
     : `${seat.gridRow}`;
   let seatImg: any = null;
-  if (seat.isSleeper) {
+  if (isRestRoom) {
+    seatImg = restroomIcon;
+  } else if (isEmptySpace || isPantry) {
+    seatImg = null;
+  } else if (seat.isSleeper) {
     if (isSeatSelected) {
       seatImg = selectedSleeper;
     } else if (!seat.isAvailable) {
@@ -175,12 +194,14 @@ const RenderSeat = React.memo(function RenderSeat({
 
   return (
     <div
-      onClick={() => handleSeatClick(seat)}
+      onClick={() => {
+        if (!isRestRoom && !isEmptySpace && !isPantry) handleSeatClick(seat);
+      }}
       className="seat-wrapper position-relative d-flex flex-column"
       style={{
         gridRow: gridRowValue,
         gridColumn: isLegend ? "auto" : seat.col + 1,
-        cursor: seat.isAvailable || isLegend ? "pointer" : "not-allowed",
+        cursor: (seat.isAvailable && !isRestRoom && !isEmptySpace && !isPantry) || isLegend ? "pointer" : "not-allowed",
         opacity: 1,
         position: "relative",
         width: isLegend
@@ -192,23 +213,23 @@ const RenderSeat = React.memo(function RenderSeat({
           ? (seat.isSleeper ? "64px" : "32px")
           : isHorizontalSeat
           ? "42px"
-          : seat.isSleeper
+          : shouldUseSleeperSlot
           ? "82px"
           : "42px",
         display: "flex",
         flexDirection: "column",
-        justifyContent: seat.isSleeper || isLegend ? "center" : "flex-end",
+        justifyContent: ezeeAlignToBottom ? "flex-end" : (seat.shouldCenterInSleeperSlot || ezeeNeedsSleeperSlot) ? "center" : (seat.isSleeper || isLegend ? "center" : "flex-end"),
         gap: "2px",
         transition: "all 0.2s ease-in-out",
         margin: isLegend ? "0 auto" : "0",
       }}
-      title={!isLegend ? `Seat ${seat.id} | ₹${seat.fare}` : ""}
+      title={!isLegend ? (isRestRoom ? "Restroom" : (isEmptySpace || isPantry ? seat.id : `Seat ${seat.id} | ₹${seat.fare}`)) : ""}
     >
       {seatImg && (
         <div
           style={{
             width: isHorizontalSeat ? "72px" : "100%",
-            height: isHorizontalSeat ? "42px" : "100%",
+            height: (seat.shouldCenterInSleeperSlot || ezeeNeedsSleeperSlot) ? "42px" : (isHorizontalSeat ? "42px" : "100%"),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -250,7 +271,7 @@ const RenderSeat = React.memo(function RenderSeat({
             textOrientation: "mixed",
 
             textAlign: "center",
-            visibility: (seat.isAvailable && !isSeatSelected) ? "visible" : "hidden"
+            visibility: (seat.isAvailable && !isSeatSelected && !isRestRoom && !isEmptySpace && !isPantry) ? "visible" : "hidden"
           }}
         >
           ₹{seat.fare}
@@ -267,6 +288,10 @@ const RenderSeat = React.memo(function RenderSeat({
   prevProps.seat.isLadies === nextProps.seat.isLadies &&
   prevProps.seat.isMale === nextProps.seat.isMale &&
   prevProps.seat.shouldAlignToBottom === nextProps.seat.shouldAlignToBottom &&
+  prevProps.seat.shouldCenterInSleeperSlot === nextProps.seat.shouldCenterInSleeperSlot &&
+  (prevProps.seat as any).isInMixedEzeeColumn === (nextProps.seat as any).isInMixedEzeeColumn &&
+  (prevProps.seat as any).ezeeNeedsSleeperSlot === (nextProps.seat as any).ezeeNeedsSleeperSlot &&
+  (prevProps.seat as any).ezeeAlignToBottom === (nextProps.seat as any).ezeeAlignToBottom &&
   prevProps.operatorName === nextProps.operatorName &&
   prevProps.provider === nextProps.provider &&
   prevProps.busType === nextProps.busType
@@ -302,6 +327,26 @@ export default function Step1SeatSelection({
 }: Step1Props) {
   const isVrl = provider?.toLowerCase() === "vrl";
   
+  const preprocessDeck = (deck: NormalizedSeat[]) => {
+    const isBusSemiSleeper = String(busType).toLowerCase().includes("semi sleeper");
+    return deck.map((seat: any) => {
+const isSS =
+  seat.seatType === "SS" ||
+  seat.seatType === "Semi Sleeper" ||
+  String(seat.id).toUpperCase().includes("SEMI");
+      const upperId = String(seat.id).toUpperCase();
+      const isSpecial = ["RRM", "REME", "RM", "RESTROOM", "WASHROOM", "FRS", "EMPTY", "PTY", "PANTRY"].includes(upperId) || seat.isRestRoom || seat.seatType === "RRM";
+      
+      return {
+        ...seat,
+        isSleeper: isSpecial ? false : (isSS ? true : seat.isSleeper),
+      };
+    });
+  };
+
+  const correctedLowerDeckSeats = useMemo(() => preprocessDeck(lowerDeckSeats), [lowerDeckSeats]);
+  const correctedUpperDeckSeats = useMemo(() => preprocessDeck(upperDeckSeats), [upperDeckSeats]);
+
   // FINAL LOGIC: 2+2, allow semi sleeper, but NOT mixed sleeper/seater
   const isHard49SeaterBus = useMemo(() => {
     if (!busType) return false;
@@ -493,6 +538,27 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
   const computeVisualGrid = (deckSeats: NormalizedSeat[], isVrl: boolean = false): SeatWithGrid[] => {
     if (!deckSeats || deckSeats.length === 0) return [];
 
+    const isSrsSleeperSeater =
+      provider === "SRS" &&
+      busType?.toLowerCase().includes("sleeper") &&
+      busType?.toLowerCase().includes("seater");
+
+    if (isSrsSleeperSeater) {
+      const upperDeck = deckSeats.every(s => s.isUpper);
+
+      if (upperDeck) {
+        const uniqueRows = [...new Set(deckSeats.map(s => s.row))].sort((a, b) => a - b);
+        const rowMap = new Map<number, number>();
+        uniqueRows.forEach((row, idx) => {
+          rowMap.set(row, idx);
+        });
+        deckSeats = deckSeats.map(seat => ({
+          ...seat,
+          row: rowMap.get(seat.row) ?? seat.row,
+        }));
+      }
+    }
+
     // Check if the deck has exactly one seater and the rest are sleepers.
     const seaterCount = deckSeats.filter(s => !s.isSleeper).length;
     const sleeperCount = deckSeats.filter(s => s.isSleeper).length;
@@ -527,6 +593,26 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
 
     let axisMappedSeats = deckSeats;
 
+    if (provider === "EZEE_V2" || provider === "EZEE_V3") {
+      const minRow = deckSeats.length > 0 ? Math.min(...deckSeats.map(s => s.row)) : 0;
+      const ezeeColMap: Record<number, number> = {
+        4: 0, // left sleeper
+        3: 1, // aisle
+        2: 2, // right side
+        1: 3, // right side
+      };
+
+      axisMappedSeats = deckSeats.map(seat => ({
+        ...seat,
+        // Make it 0-indexed for the formula to work correctly, as API rows can be 1-based or other.
+        // This is safe because we are only applying the special logic for EZEE provider.
+        // The user's formula `(seat.row * 2) + 1` expects 0-indexed rows.
+        row: seat.row - minRow,
+        col: ezeeColMap[seat.col] ?? seat.col,
+      }));
+
+    }
+
     const isPureSriBalajiSleeper =
       operatorName?.toLowerCase().includes("balaji") &&
       busType?.toLowerCase().includes("sleeper") &&
@@ -542,7 +628,7 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
       !(busType?.toLowerCase().includes("sleeper") && busType?.toLowerCase().includes("seater"));
 
     const shouldSkipColumnNormalization =
-      isPureSriBalajiSleeper || isVrl || isSRS2Plus2;
+      isPureSriBalajiSleeper || isVrl || isSRS2Plus2 || provider === "EZEE_V2" || provider === "EZEE_V3";
 
     // 1. Enforce 2+2 layout only for true 2+2 buses.
     //    For VRL normal buses, trust the API coordinates instead of forcing compression.
@@ -626,11 +712,22 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
     
     // ✅ ONLY sleeper seats
     const lastRowSleepers = lastRowSeats.filter(s => s.isSleeper);
-    const rotatedSeats = colNormalized.filter(s => lastSeats.includes(s.id));
+    const rotatedSeats = colNormalized.filter(s => lastSeats.includes(s.id) || s.isRotated);
     
+    if (provider === "EZEE_V2" || provider === "EZEE_V3") {
+      console.log(
+        "EZEE horizontal seats",
+        rotatedSeats.map(s => ({
+          id: s.id,
+          row: s.row,
+          col: s.col
+        }))
+      );
+    }
+
     const shiftedSeatIds = new Set<string>();
 
-    const allowCenterShift = !isVrl;
+    const allowCenterShift = !isVrl && provider !== "EZEE_V2" && provider !== "EZEE_V3";
 
     if (rotatedSeats.length > 0 && allowCenterShift) {
       colNormalized = colNormalized.map(seat => {
@@ -653,8 +750,7 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
     const rowMap = new Map<number, number>();
     const rowIsAllSleeper = new Map<number, boolean>();
     let currentGridRow = 1;
-
-    const isMixedDeck = deckSeats.length > 0 && !deckSeats.every(s => s.isSleeper);
+    const isMixedDeck = deckSeats.some(s => s.isSleeper) && deckSeats.some(s => !s.isSleeper);
 
     sortedRows.forEach(apiRow => {
       const seatsInRow = colNormalized.filter(s => s.row === apiRow);
@@ -666,6 +762,14 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
       const isShiftedRow = seatsInRow.length > 0 && seatsInRow.every(s => shiftedSeatIds.has(s.id));
 
       let treatAsAllSleeper = allSleepers;
+      const hasOnlyRotatedSeats = seatsInRow.length > 0 && seatsInRow.every(s => lastSeats.includes(s.id) || s.isRotated);
+
+      // For EZEE mixed layouts, if ANY seat in the row is a sleeper, the entire
+      // grid row must be expanded to accommodate it, otherwise the taller sleeper
+      // seat will visually collide with the seater-height row below it.
+      if (provider === "EZEE_V2" || provider === "EZEE_V3") {
+        treatAsAllSleeper = hasSleeperInRow;
+      }
 
       if (
         isMixedDeck &&
@@ -711,7 +815,17 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
         !isShiftedRow &&
         provider !== "VRL";
 
-      currentGridRow += shouldExpandRow ? 2 : 1;
+      const isMixedEzee = (provider === "EZEE_V2" || provider === "EZEE_V3") && isMixedDeck;
+
+      if ((provider === "EZEE_V2" || provider === "EZEE_V3") && hasOnlyRotatedSeats) {
+        currentGridRow += 1;
+      } else if (isMixedEzee) {
+        // For EZEE mixed layouts, sleepers will span 2 grid rows, but we increment
+        // the grid row counter by 1 for each API row to allow seaters to stack correctly.
+        currentGridRow += 1;
+      } else {
+        currentGridRow += shouldExpandRow ? 2 : 1;
+      }
     });
 
     // 🔥 Add totalSeatsInRow and isLastRow for each seat
@@ -721,30 +835,152 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
     });
     const maxRowVal = Math.max(...colNormalized.map(s => s.row));
 
-    return colNormalized.map(seat => {
-      const seatsInSameRow = colNormalized.filter(s => s.row === seat.row);
-      const rowHasSleeper = seatsInSameRow.some(s => s.isSleeper);
+    const isSrsMixed =
+      provider === "SRS" &&
+      busType?.toLowerCase().includes("sleeper") &&
+      busType?.toLowerCase().includes("seater");
 
-      return {
+    const isEzeeProvider = provider === "EZEE_V2" || provider === "EZEE_V3";
+    const mixedEzeeCols = new Set<number>();
+    const ezeeGridRows = new Map<string, number>();
+    const ezeeNeedsSleeperSlotSet = new Set<string>();
+    const ezeeAlignToBottomSet = new Set<string>();
+
+    if (isEzeeProvider) {
+      const cols = [...new Set(colNormalized.map(s => s.col))];
+      cols.forEach(col => {
+        const seatsInCol = colNormalized.filter(s => s.col === col).sort((a, b) => a.row - b.row);
+        const hasSleeper = seatsInCol.some(s => s.isSleeper);
+        const hasSeater = seatsInCol.some(s => !s.isSleeper);
+        const isMixedCol = hasSleeper && hasSeater;
+        const isPureSleeper = hasSleeper && !hasSeater;
+        
+        if (isMixedCol) mixedEzeeCols.add(col);
+
+        let currentTrack = 1;
+        let pureSleeperTrack = 1;
+
+        seatsInCol.forEach((seat, index) => {
+          const isRotated = lastSeats.includes(seat.id) || seat.isRotated;
+
+          if (isMixedCol) {
+            const prevSeat = seatsInCol[index - 1];
+            const nextSeat = seatsInCol[index + 1];
+
+            const prevIsAdjacentSleeper = prevSeat?.isSleeper && (seat.row - prevSeat.row === 1);
+            const nextIsAdjacentSleeper = nextSeat?.isSleeper && (nextSeat.row - seat.row === 1);
+
+            const sleepersAfter = seatsInCol.slice(index + 1).filter(s => s.isSleeper).length;
+            const isLastSeat = index === seatsInCol.length - 1;
+
+            const needsSleeperSlot =
+              !seat.isSleeper &&
+              (
+                (prevIsAdjacentSleeper && nextIsAdjacentSleeper) ||
+                (index === 0 && sleepersAfter >= 2) ||
+                (isLastSeat && prevIsAdjacentSleeper)
+              );
+
+            if (needsSleeperSlot) {
+              ezeeNeedsSleeperSlotSet.add(seat.id);
+              if (isLastSeat) {
+                ezeeAlignToBottomSet.add(seat.id);
+              }
+            }
+
+            // Expected physical row should NOT force gaps for rotated seats
+            const expectedPhysicalRow = isRotated ? currentTrack : (seat.isSleeper || needsSleeperSlot ? (seat.row * 2) + 1 : seat.row + 1);
+            currentTrack = Math.max(currentTrack, expectedPhysicalRow);
+
+            ezeeGridRows.set(seat.id, currentTrack);
+            const spans2 = (seat.isSleeper && !isRotated) || needsSleeperSlot;
+            currentTrack += spans2 ? 2 : 1;
+          } else if (isPureSleeper) {
+            if (index === 0) {
+              pureSleeperTrack = (seat.row * 2) + 1;
+            } else {
+              const prevSeat = seatsInCol[index - 1];
+              const prevIsRotated = lastSeats.includes(prevSeat.id) || prevSeat.isRotated;
+              const gapRows = Math.max(0, seat.row - prevSeat.row - 1);
+              const prevSpan = prevIsRotated ? 1 : 2;
+              pureSleeperTrack += prevSpan + (gapRows * 2);
+            }
+            ezeeGridRows.set(seat.id, pureSleeperTrack);
+          } else {
+            ezeeGridRows.set(seat.id, seat.row + 1);
+          }
+        });
+      });
+    }
+
+    // For SRS mixed layouts, the API coordinates are generally correct and should not
+    // be subjected to EZEE's special seater-stacking logic. We can return early.
+    if (isSrsMixed) {
+      console.log("[Layout] SRS mixed layout detected. Bypassing EZEE-specific stacking logic.");
+      return colNormalized.map(seat => ({
         ...seat,
         gridRow: rowMap.get(seat.row)!,
         allSleeperRow: rowIsAllSleeper.get(seat.row) ?? false,
-        shouldAlignToBottom: isSingleSeaterMixedBus && !seat.isSleeper && rowHasSleeper,
+        shouldAlignToBottom: false, // SRS mixed layouts do not need seater centering.
         totalSeatsInRow: rowCounts[seat.row],
         isLastRow: shiftedSeatIds.has(seat.id) || seat.row === maxRowVal,
+        isInMixedEzeeColumn: false,
+        ezeeNeedsSleeperSlot: false,
+      }));
+    }
+
+    const visualGridResult = colNormalized.map(seat => {
+      const gridRowForApiRow = rowMap.get(seat.row)!;
+      const seatsInSameRow = colNormalized.filter(s => s.row === seat.row);
+      const rowHasSleeper = seatsInSameRow.some(s => s.isSleeper);
+
+      let finalGridRow = gridRowForApiRow;
+      let finalShouldAlignToBottom = false;
+      let shouldCenterInSleeperSlot = false;
+
+      if (isEzeeProvider) {
+        finalGridRow = ezeeGridRows.get(seat.id) || 1;
+      }
+
+      console.log(seat.id, seat.row, finalGridRow, seat.isRotated);
+
+      return {
+        ...seat,
+        gridRow: finalGridRow,
+        allSleeperRow: rowIsAllSleeper.get(seat.row) ?? false,
+        shouldAlignToBottom: finalShouldAlignToBottom,
+        shouldCenterInSleeperSlot,
+        totalSeatsInRow: rowCounts[seat.row],
+        isLastRow: shiftedSeatIds.has(seat.id) || seat.row === maxRowVal,
+        isInMixedEzeeColumn: mixedEzeeCols.has(seat.col),
+        ezeeNeedsSleeperSlot: ezeeNeedsSleeperSlotSet.has(seat.id),
+        ezeeAlignToBottom: ezeeAlignToBottomSet.has(seat.id),
       };
     });
+
+    console.log(
+      "Rotated Seats Grid Check:",
+      visualGridResult
+        .filter(s => lastSeats.includes(s.id) || s.isRotated)
+        .map(s => ({
+          id: s.id,
+          row: s.row,
+          gridRow: s.gridRow
+        }))
+    );
+
+    return visualGridResult;
   };
 
   // ✅ Process both decks through the visual grid formatter
   const normalizedLowerDeckSeats = useMemo(
-    () => computeVisualGrid(lowerDeckSeats, isVrl), // isLowerDeck is inferred inside
-    [lowerDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
+    () => computeVisualGrid(correctedLowerDeckSeats, isVrl), // isLowerDeck is inferred inside
+    [correctedLowerDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
   );
 
   const normalizedUpperDeckSeats = useMemo(
-    () => computeVisualGrid(upperDeckSeats, isVrl), // isLowerDeck is inferred inside
-    [upperDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
+    () => computeVisualGrid(correctedUpperDeckSeats, isVrl), // isLowerDeck is inferred inside
+    [correctedUpperDeckSeats, isVrl, busType, operatorName, provider, lastSeats]
   );
 
 const maxCol = isHard49SeaterBus
@@ -757,7 +993,8 @@ const maxCol = isHard49SeaterBus
   // ✅ Calculate Max Row based on the new gridRow value
   const getExtraRowSpan = (s: any) => {
     const isShifted = !isVrl && s.isRotated;
-    return s.isSleeper && !isShifted ? 1 : 0;
+    const spans2 = s.isSleeper || s.shouldCenterInSleeperSlot || s.ezeeNeedsSleeperSlot;
+    return spans2 && !isShifted ? 1 : 0;
   };
 
   const maxLowerRow =
@@ -1033,7 +1270,7 @@ const maxCol = isHard49SeaterBus
                     paddingTop: "62px",
                   }}
                 >
-                  <div className="deck-title">{is2Plus2Bus ? "Main Deck" : "Lower deck"}</div>
+                  <div className="deck-title">{normalizedUpperDeckSeats.length > 0 ? "Lower deck" : "Main deck"}</div>
                   <i className="bi bi-life-preserver steering-wheel"></i>
                   <div className="redbus-grid" style={gridStyle}>
                     {[...normalizedLowerDeckSeats]

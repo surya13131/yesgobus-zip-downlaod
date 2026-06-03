@@ -238,8 +238,14 @@ function SeatLayoutContent() {
     }));
   };
 
-  const lowerDeckSeats = normalizeDeck(seats.filter(s => !s.isUpper));
-  const upperDeckSeats = normalizeDeck(seats.filter(s => s.isUpper));
+  const lowerDeckSeatsRaw = seats.filter(s => !s.isUpper);
+  const upperDeckSeatsRaw = seats.filter(s => s.isUpper);
+
+  // For EZEE, we trust the raw coordinates from the API and do not normalize them to a 0,0 origin.
+  // For other providers, normalize each deck to start at its own 0,0.
+  const isEzee = provider === "EZEE_V2" || provider === "EZEE_V3";
+  const lowerDeckSeats = isEzee ? lowerDeckSeatsRaw : normalizeDeck(lowerDeckSeatsRaw);
+  const upperDeckSeats = isEzee ? upperDeckSeatsRaw : normalizeDeck(upperDeckSeatsRaw);
 
   const maxRowLower = lowerDeckSeats.length > 0 ? Math.max(...lowerDeckSeats.map(s => s.row + 1)) : 0;
   const maxRowUpper = upperDeckSeats.length > 0 ? Math.max(...upperDeckSeats.map(s => s.row + 1)) : 0;
