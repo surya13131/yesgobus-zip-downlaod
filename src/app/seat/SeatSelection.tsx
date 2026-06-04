@@ -331,6 +331,12 @@ export default function Step1SeatSelection({
   
   const preprocessDeck = (deck: NormalizedSeat[]) => {
     const isBusSemiSleeper = String(busType).toLowerCase().includes("semi sleeper");
+    
+    const isEzeeMixedBus =
+      (provider === "EZEE_V2" || provider === "EZEE_V3") &&
+      String(busType).toLowerCase().includes("seater") &&
+      String(busType).toLowerCase().includes("sleeper");
+
     return deck.map((seat: any) => {
 const isSS =
   seat.seatType === "SS" ||
@@ -340,9 +346,19 @@ const isSS =
       const isRestRoom = ["RRM", "REME", "RM", "RESTROOM", "WASHROOM"].includes(upperId) || seat.isRestRoom || seat.seatType === "RRM";
       const isSpecial = ["FRS", "EMPTY", "PTY", "PANTRY"].includes(upperId);
       
+      let isSleeper = isRestRoom ? true : (isSpecial ? false : (isSS ? true : seat.isSleeper));
+
+      if (
+        isEzeeMixedBus &&
+        seat.seatType === "SS" &&
+        !seat.isUpper
+      ) {
+        isSleeper = false;
+      }
+
       return {
         ...seat,
-        isSleeper: isRestRoom ? true : (isSpecial ? false : (isSS ? true : seat.isSleeper)),
+        isSleeper,
         isRestRoom,
       };
     });
@@ -1103,6 +1119,15 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
 
       if (isEzeeProvider) {
         finalGridRow = ezeeGridRows.get(seat.id) || 1;
+      }
+
+      const isEzeeMixedBus =
+        (provider === "EZEE_V2" || provider === "EZEE_V3") &&
+        String(busType).toLowerCase().includes("seater") &&
+        String(busType).toLowerCase().includes("sleeper");
+
+      if (isEzeeMixedBus && !seat.isSleeper && seat.col >= 2) {
+        finalGridRow += 1;
       }
 
       console.log(seat.id, seat.row, finalGridRow, seat.isRotated);
