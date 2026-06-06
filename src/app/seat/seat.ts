@@ -526,7 +526,8 @@ const removeOutlierSeats = (seats: NormalizedSeat[]): NormalizedSeat[] => {
 export const fixBrokenSeatLayout = (
   provider: string,
   seats: NormalizedSeat[],
-  busType: string
+  busType: string,
+  operatorName?: string
 ): NormalizedSeat[] => {
   if (!seats || seats.length === 0) return seats;
   if (!["VRL", "SRS", "EZEE_V2", "EZEE_V3"].includes(provider)) return seats;
@@ -702,6 +703,11 @@ if (isMixedSleeperSeaterBus(busType)) {
     "COLS:",
     [...new Set(seats.map(s => s.col))].sort((a, b) => a - b)
   );
+
+  if (provider === "SRS" && String(operatorName || "").toUpperCase().includes("CVR")) {
+    console.log("[CVR Fix] Preserve original coordinates");
+    return seats;
+  }
 
   const lower = seats.filter(s => !s.isUpper);
   const upper = seats.filter(s => s.isUpper);
@@ -1268,7 +1274,7 @@ export const fetchSeatLayoutData = async ({
 
       // ── Trust-But-Verify pipeline ────────────────────────────────────────
       fetchedSeats = normalizeSeatCoordinates(fetchedSeats);
-      fetchedSeats = fixBrokenSeatLayout(provider, fetchedSeats, detectedBusType);
+      fetchedSeats = fixBrokenSeatLayout(provider, fetchedSeats, detectedBusType, operatorName);
       fetchedSeats = applyBusTypeRules(fetchedSeats, detectedBusType);
     }
   }
@@ -1479,7 +1485,7 @@ export const fetchSeatLayoutData = async ({
 
       // ── Trust-But-Verify pipeline ────────────────────────────────────────
       fetchedSeats = normalizeSeatCoordinates(fetchedSeats);
-      fetchedSeats = fixBrokenSeatLayout(provider, fetchedSeats, detectedBusType);
+      fetchedSeats = fixBrokenSeatLayout(provider, fetchedSeats, detectedBusType, operatorName);
       const isPureSleeper =
         String(detectedBusType || "").toLowerCase().includes("sleeper") &&
         !String(detectedBusType || "").toLowerCase().includes("seater");

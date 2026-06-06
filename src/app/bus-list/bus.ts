@@ -15,7 +15,7 @@ export const fetchAllBusData = async (
   vrlSourceId?: string | null,
   vrlDestId?: string | null,
   srsSourceId?: string | null,
-  srsDestId?: string | null
+  srsDestId?: string | null,
   ezeeSourceCode?: string | null,
   ezeeDestCode?: string | null
 ) => {
@@ -56,7 +56,12 @@ export const fetchAllBusData = async (
   ]);
 
   // 3. Combine Buses
-  let combinedBuses: NormalizedBus[] = [...(vrl || []), ...(srs || []), ...(ezeeV2 || []), ...(ezeeV3 || [])];
+  let combinedBuses: NormalizedBus[] = [
+    ...(vrl || []),
+    ...(srs || []),
+    ...(ezeeV2 || []),
+    ...(ezeeV3 || [])
+  ].filter(bus => Number(bus.availableSeats ?? 0) > 0);
 
   // 4. Combine Filters (Boarding / Dropping)
   let combinedBoarding: any[] = [];

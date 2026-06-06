@@ -118,7 +118,13 @@ const RenderSeat = React.memo(function RenderSeat({
 
   const lastSeatsFromApi = lastSeats || [];
 
-  const isForcedRotateSeat = lastSeatsFromApi.includes(seat.id);
+  const forceSeatIcon =
+    operatorName?.toUpperCase().includes("SEABIRD") &&
+    String(busType).includes("2+2") &&
+    String(busType).toUpperCase().includes("SEATER") &&
+    !String(busType).toUpperCase().includes("SLEEPER");
+
+  const isForcedRotateSeat = lastSeatsFromApi.includes(seat.id) && !forceSeatIcon;
 
   if (isForcedRotateSeat) {
     console.log(
@@ -337,6 +343,12 @@ export default function Step1SeatSelection({
       String(busType).toLowerCase().includes("seater") &&
       String(busType).toLowerCase().includes("sleeper");
 
+    const isSeabird22Seater =
+      operatorName?.toUpperCase().includes("SEABIRD") &&
+      String(busType).includes("2+2") &&
+      String(busType).toUpperCase().includes("SEATER") &&
+      !String(busType).toUpperCase().includes("SLEEPER");
+
     return deck.map((seat: any) => {
 const isSS =
   seat.seatType === "SS" ||
@@ -356,6 +368,11 @@ const isSS =
         isSleeper = false;
       }
 
+      if (isSeabird22Seater) {
+        isSleeper = false;
+        seat.isRotated = false;
+      }
+
       return {
         ...seat,
         isSleeper,
@@ -366,6 +383,17 @@ const isSS =
 
   const correctedLowerDeckSeats = useMemo(() => preprocessDeck(lowerDeckSeats), [lowerDeckSeats]);
   const correctedUpperDeckSeats = useMemo(() => preprocessDeck(upperDeckSeats), [upperDeckSeats]);
+
+  console.log(
+    "[RAW CVR]",
+    lowerDeckSeats
+      .filter(s => ["L5","L6","L7","L8"].includes(s.id))
+      .map(s => ({
+        id: s.id,
+        row: s.row,
+        col: s.col
+      }))
+  );
 
   // FINAL LOGIC: 2+2, allow semi sleeper, but NOT mixed sleeper/seater
   const isHard49SeaterBus = useMemo(() => {
@@ -1121,11 +1149,45 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
         }
       }
 
-      return colNormalized.map(seat => {
+      const isCVR = provider === "SRS" && operatorName?.toUpperCase().includes("CVR");
+
+      const result = colNormalized.map(seat => {
         const mappedRow = rowMap.get(seat.row)!;
+        let finalMappedRow = mappedRow;
+
+        if (isCVR) {
+          // shift all seaters one row down
+          if (!seat.isUpper && !seat.isSleeper) {
+            finalMappedRow += 1;
+          }
+
+          // keep upper deck aligned
+          if (seat.isUpper) {
+            finalMappedRow += 1;
+          }
+           if (
+    seat.id === "L6" &&
+    seat.isSleeper &&
+    !seat.isUpper
+  ) {
+    finalMappedRow -= 1;
+  }
+
+      const lastSleeperIds = ["L7", "L8"];
+
+if (
+  seat.isSleeper &&
+  !seat.isUpper &&
+  lastSleeperIds.includes(seat.id)
+) {
+  finalMappedRow += 1;
+}
+        }
+        
+
         return {
           ...seat,
-          gridRow: (isEzeeThreeRowSeaterLayout && seat.isSleeper) ? mappedRow + sleeperOffset : mappedRow,
+          gridRow: (isEzeeThreeRowSeaterLayout && seat.isSleeper) ? finalMappedRow + sleeperOffset : finalMappedRow,
           allSleeperRow: rowIsAllSleeper.get(seat.row) ?? false,
           shouldAlignToBottom: false, // SRS mixed layouts do not need seater centering.
           totalSeatsInRow: rowCounts[seat.row],
@@ -1135,6 +1197,21 @@ const normalizeColumns = (deckSeats: NormalizedSeat[]) => {
           isEzeeThreeRowSeaterLayout: isEzeeThreeRowSeaterLayout,
         };
       });
+
+      if (isCVR) {
+        console.log(
+          "[CVR FINAL]",
+          result
+            .filter(s => ["L5", "L6", "L7", "L8"].includes(s.id))
+            .map(s => ({
+              id: s.id,
+              row: s.row,
+              gridRow: s.gridRow
+            }))
+        );
+      }
+
+      return result;
     }
 
     const visualGridResult = colNormalized.map(seat => {

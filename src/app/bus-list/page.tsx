@@ -117,33 +117,17 @@ const isMeaningfulTime = (time: any): boolean => {
   return value !== "" && value !== "--:--" && value !== "00:00" && value !== "0:00";
 };
 
-const normalizeTimeDisplay = (timeStr: any, provider: string): string => {
-  const raw = String(timeStr || "").trim();
-  if (!raw || raw === "--:--") return "--:--";
+const formatTime = (time: string) => {
+  if (!time) return "--:--";
+  const [h, m] = time.split(":");
+  const hour = Number(h);
+  if (isNaN(hour)) return time;
 
-  const date = new Date(raw);
-  if (!isNaN(date.getTime()) && raw.includes("T")) {
-    return date.toLocaleTimeString('en-US', { hour: "2-digit", minute: "2-digit", hour12: true }).toUpperCase();
-  }
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
 
-  const match24 = raw.match(/\b([01]?[0-9]|2[0-3]):([0-5][0-9])\s*([AaPp][Mm])?\b/);
-  if (!match24) return raw;
-
-  let hours = parseInt(match24[1], 10);
-  const minutes = match24[2];
-  let ampm = match24[3] ? match24[3].toUpperCase() : null;
-
-  if (!ampm) {
-    if (hours >= 12) {
-      ampm = "PM";
-      if (hours > 12) hours -= 12;
-    } else {
-      ampm = "AM";
-      if (hours === 0) hours = 12;
-    }
-  }
-
-  return `${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
+  const mins = m ? m.substring(0, 2) : "00";
+  return `${String(displayHour).padStart(2, "0")}:${mins} ${ampm}`;
 };
 
 const getBusType = (bus: NormalizedBus): string => {
@@ -188,6 +172,34 @@ const getSimulatedRating = (bus: NormalizedBus): string => {
   
   let rating = Math.min(Math.max(base + randomFactor, 3.1), 4.9);
   return rating.toFixed(1);
+};
+
+const getAvailableSeats = (bus: NormalizedBus): number => {
+  const raw = bus.originalData || {};
+
+  if (bus.apiProvider?.includes("EZEE")) {
+    const seats = raw.bus?.seatLayoutList || raw.seatLayoutList || [];
+    const availableFromLayout = seats.filter(
+      (s: any) => s.seatStatus?.code === "AL"
+    ).length;
+
+    if (Number(raw.availableSeatCount) === 0 && availableFromLayout > 0) {
+      return availableFromLayout;
+    }
+    return Number(raw.availableSeatCount || 0);
+  }
+
+  const seats = Number(
+    raw.EmptySeats ??
+    raw.emptySeats ??
+    raw.seatsAvailable ??
+    raw.availableSeats ??
+    raw.AvailableSeats ??
+    raw.SeatsAvailable ??
+    bus.availableSeats ??
+    0
+  );
+  return isNaN(seats) ? 0 : seats;
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -258,7 +270,8 @@ function BusListContent() {
   const [loading, setLoading] = useState(true);
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState<string>("");
+  const [filterInput, setFilterInput] = useState("");
+  const [filterText, setFilterText] = useState("");
   const [sortBy, setSortBy] = useState<"Price" | "Departure time" | "Ratings">("Price");
 
   const [boardingPoints, setBoardingPoints] = useState<any[]>([]);
@@ -276,6 +289,60 @@ function BusListContent() {
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   const [selectedDay, setSelectedDay] = useState("");
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("busFilters");
+    if (saved) {
+      try {
+        const filters = JSON.parse(saved);
+        if (filters.selectedOperators) setSelectedOperators(filters.selectedOperators);
+        if (filters.selectedBoardingPoints) setSelectedBoarding(filters.selectedBoardingPoints);
+        if (filters.selectedDroppingPoints) setSelectedDropping(filters.selectedDroppingPoints);
+        if (filters.selectedDepTimes) setSelectedDepTimes(filters.selectedDepTimes);
+        if (filters.selectedArrTimes) setSelectedArrTimes(filters.selectedArrTimes);
+        if (filters.selectedBusTypes) setSelectedBusTypes(filters.selectedBusTypes);
+        if (filters.selectedAmenities) setSelectedAmenities(filters.selectedAmenities);
+        if (filters.selectedFeatures) setSelectedFeatures(filters.selectedFeatures);
+        if (filters.activeFilter !== undefined) setActiveFilter(filters.activeFilter);
+        if (filters.openAccordion !== undefined) setOpenAccordion(filters.openAccordion);
+      } catch (e) {
+        console.error("Failed to load filters", e);
+      }
+    }
+    setFiltersLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!filtersLoaded) return;
+    sessionStorage.setItem(
+      "busFilters",
+      JSON.stringify({
+        selectedOperators,
+        selectedBoardingPoints: selectedBoarding,
+        selectedDroppingPoints: selectedDropping,
+        selectedDepTimes,
+        selectedArrTimes,
+        selectedBusTypes,
+        selectedAmenities,
+        selectedFeatures,
+        activeFilter,
+        openAccordion
+      })
+    );
+  }, [
+    selectedOperators,
+    selectedBoarding,
+    selectedDropping,
+    selectedDepTimes,
+    selectedArrTimes,
+    selectedBusTypes,
+    selectedAmenities,
+    selectedFeatures,
+    activeFilter,
+    openAccordion,
+    filtersLoaded
+  ]);
 
   useEffect(() => {
     const todayStr = formatApiDate(new Date());
@@ -529,6 +596,10 @@ function BusListContent() {
     router.push(`/bus-list?${queryParams.toString()}`);
   };
 
+  const handleFilterSearch = () => {
+    setFilterText(filterInput);
+  };
+
   const divider = <div className="divider-vertical d-none d-lg-block" />;
 
   const theme = {
@@ -588,10 +659,25 @@ function BusListContent() {
         ]);
 
         const combinedRaw = [...(vrl || []), ...(srs || []), ...(ezee || [])];
-        const combined = combinedRaw.map(bus => ({
-          ...bus,
-          rating: getSimulatedRating(bus)
-        }));
+
+        console.log(
+          "ZERO SEAT BUSES",
+          combinedRaw.filter(
+            bus => getAvailableSeats(bus) <= 0
+          )
+        );
+
+        const combined = combinedRaw
+          .filter(bus => getAvailableSeats(bus) > 0)
+          .map(bus => ({
+            ...bus,
+            rating: getSimulatedRating(bus)
+          }));
+
+        console.log(
+          "AFTER FILTER",
+          combined.length
+        );
 
         console.log(`🚌 BUS COUNTS -> VRL: ${vrl?.length ?? 0} | SRS: ${srs?.length ?? 0} | EZEE: ${ezee?.length ?? 0} | TOTAL: ${combined.length}`);
 
@@ -621,50 +707,6 @@ function BusListContent() {
     loadBusesAndFilters();
   }, [vrlSourceId, vrlDestId, srsSourceId, srsDestId, ezeeSourceCodeUrl, ezeeDestCodeUrl, urlDateParam, urlSourceName, urlDestName]);
 
-  const filterCounts = useMemo(() => {
-    let ac = 0, nonAc = 0, sleeper = 0, seater = 0, volvo = 0,
-        highRated = 0, primo = 0, freeCanc = 0, singleSeats = 0, liveTracking = 0;
-
-    buses.forEach(b => {
-      const rawType = getBusType(b);
-      const type = String(rawType).toUpperCase().replace(/A\/C/g, "AC").replace(/NON-AC/g, "NON AC");
-      const rating = parseFloat(b.rating || "0");
-      const isSrs = b.apiProvider === 'SRS';
-      const raw = b.originalData || {};
-
-      if (type.includes("AC") && !type.includes("NON AC")) ac++;
-      if (type.includes("NON AC")) nonAc++;
-      if (type.includes("SLEEPER")) sleeper++;
-      if (type.includes("SEATER") || type.includes("SEAT")) seater++;
-      if (type.includes("VOLVO")) volvo++;
-      if (rating >= 4.5) highRated++;
-      if (rating >= 4.8) primo++;
-      if (isSrs && raw.is_cancellable) freeCanc++;
-      if (!isSrs) freeCanc++;
-      if (type.includes("2+1") || type.includes("1X1")) singleSeats++;
-      if (raw.gps === true || raw.IsLiveTracking === true) liveTracking++;
-    });
-
-    return {
-      "Primo Bus": primo, "Free Cancellation": freeCanc, "AC": ac, "Sleeper": sleeper,
-      "Single Seats": singleSeats, "Seater": seater, "NON AC": nonAc,
-      "High Rated Buses": highRated, "Live Tracking": liveTracking, "Volvo Buses": volvo
-    };
-  }, [buses]);
-
-  const dynamicFilters = [
-    { name: "Primo Bus",         count: filterCounts["Primo Bus"],         icon: busicon1 },
-    { name: "Free Cancellation",  count: filterCounts["Free Cancellation"],  icon: busicon2 },
-    { name: "AC",                 count: filterCounts["AC"],                 icon: busicon3 },
-    { name: "Sleeper",            count: filterCounts["Sleeper"],            icon: busicon4 },
-    { name: "Single Seats",       count: filterCounts["Single Seats"],       icon: busicon5 },
-    { name: "Seater",             count: filterCounts["Seater"],             icon: busicon6 },
-    { name: "NON AC",             count: filterCounts["NON AC"],             icon: busicon7 },
-    { name: "High Rated Buses",   count: filterCounts["High Rated Buses"],   icon: busicon8 },
-    { name: "Live Tracking",      count: filterCounts["Live Tracking"],      icon: busicon9 },
-    { name: "Volvo Buses",        count: filterCounts["Volvo Buses"],        icon: busicon10 },
-  ];
-
   const checkTimeSlot = (hours: number, slots: string[]) => {
     if (hours === -1) return false;
     return slots.some(slot => {
@@ -679,6 +721,17 @@ function BusListContent() {
   const displayedBuses = useMemo(() => {
     let result = [...buses];
 
+    const premiumKeywords = [
+      "volvo",
+      "9600",
+      "multi axle",
+      "multiaxle",
+      "benz",
+      "premium",
+      "slx",
+      "i-shift"
+    ];
+
     if (filterText.trim() !== "") {
       const lower = filterText.toLowerCase();
       result = result.filter(bus =>
@@ -689,15 +742,15 @@ function BusListContent() {
 
     if (activeFilter) {
       result = result.filter(bus => {
-        const type = String(getBusType(bus)).toUpperCase().replace(/A\/C/g, "AC").replace(/NON-AC/g, "NON AC");
-        if (activeFilter === "AC")              return type.includes("AC") && !type.includes("NON AC");
-        if (activeFilter === "NON AC")          return type.includes("NON AC");
-        if (activeFilter === "Sleeper")         return type.includes("SLEEPER");
-        if (activeFilter === "Seater")          return type.includes("SEATER") || type.includes("SEAT");
-        if (activeFilter === "Primo Bus")       return parseFloat(bus.rating || "0") >= 4.8;
+        const type = String(getBusType(bus)).toLowerCase();
+        if (activeFilter === "AC")              return type.includes("ac") && !type.includes("non-ac") && !type.includes("non ac");
+        if (activeFilter === "NON AC")          return type.includes("non-ac") || type.includes("non ac");
+        if (activeFilter === "Sleeper")         return type.includes("sleeper");
+        if (activeFilter === "Seater")          return type.includes("seater") || type.includes("seat");
+        if (activeFilter === "Primo Bus")       return premiumKeywords.some(k => type.includes(k));
         if (activeFilter === "High Rated Buses") return parseFloat(bus.rating || "0") >= 4.5;
-        if (activeFilter === "Single Seats")    return type.includes("2+1") || type.includes("1X1");
-        if (activeFilter === "Volvo Buses")     return type.includes("VOLVO");
+        if (activeFilter === "Single Seats")    return type.includes("2+1") || type.includes("1x1");
+        if (activeFilter === "Volvo Buses")     return type.includes("volvo");
         return true;
       });
     }
@@ -711,12 +764,12 @@ function BusListContent() {
 
     if (selectedBusTypes.length > 0) {
       result = result.filter(bus => {
-        const tType = String(getBusType(bus)).toUpperCase().replace(/A\/C/g, "AC").replace(/NON-AC/g, "NON AC");
+        const tType = String(getBusType(bus)).toLowerCase();
         return selectedBusTypes.some(type => {
-          if (type === "AC")      return tType.includes("AC") && !tType.includes("NON AC");
-          if (type === "NON AC")  return tType.includes("NON AC");
-          if (type === "Sleeper") return tType.includes("SLEEPER");
-          if (type === "Seater")  return tType.includes("SEATER") || tType.includes("SEAT");
+          if (type === "AC")      return tType.includes("ac") && !tType.includes("non-ac") && !tType.includes("non ac");
+          if (type === "NON AC")  return tType.includes("non-ac") || tType.includes("non ac");
+          if (type === "Sleeper") return tType.includes("sleeper");
+          if (type === "Seater")  return tType.includes("seater") || tType.includes("seat");
           return false;
         });
       });
@@ -739,6 +792,61 @@ function BusListContent() {
     });
   }, [buses, activeFilter, sortBy, filterText, selectedDepTimes, selectedArrTimes,
       selectedOperators, selectedBusTypes, selectedBoarding, selectedDropping, selectedAmenities, selectedFeatures]);
+
+  const filterCounts = useMemo(() => {
+    const activeBuses = displayedBuses;
+    const premiumKeywords = [
+      "volvo",
+      "9600",
+      "multi axle",
+      "multiaxle",
+      "benz",
+      "premium",
+      "slx",
+      "i-shift"
+    ];
+
+    return {
+      "Primo Bus": activeBuses.filter(bus => {
+        const type = (getBusType(bus) || "").toLowerCase();
+        return premiumKeywords.some(k => type.includes(k));
+      }).length,
+      "Free Cancellation": activeBuses.filter(b => b.apiProvider === 'SRS' ? b.originalData?.is_cancellable : true).length,
+      "AC": activeBuses.filter(b => {
+        const type = String(getBusType(b)).toLowerCase();
+        return type.includes("ac") && !type.includes("non-ac") && !type.includes("non ac");
+      }).length,
+      "Sleeper": activeBuses.filter(b => String(getBusType(b)).toLowerCase().includes("sleeper")).length,
+      "Single Seats": activeBuses.filter(b => {
+        const type = String(getBusType(b)).toLowerCase();
+        return type.includes("2+1") || type.includes("1x1");
+      }).length,
+      "Seater": activeBuses.filter(b => {
+        const type = String(getBusType(b)).toLowerCase();
+        return type.includes("seater") || type.includes("seat");
+      }).length,
+      "NON AC": activeBuses.filter(b => {
+        const type = String(getBusType(b)).toLowerCase();
+        return type.includes("non-ac") || type.includes("non ac");
+      }).length,
+      "High Rated Buses": activeBuses.filter(b => parseFloat(b.rating || "0") >= 4.5).length,
+      "Live Tracking": activeBuses.filter(b => b.originalData?.gps === true || b.originalData?.IsLiveTracking === true).length,
+      "Volvo Buses": activeBuses.filter(b => String(getBusType(b)).toLowerCase().includes("volvo")).length,
+    };
+  }, [displayedBuses]);
+
+  const dynamicFilters = [
+    { name: "Primo Bus",         count: filterCounts["Primo Bus"],         icon: busicon1 },
+    { name: "Free Cancellation",  count: filterCounts["Free Cancellation"],  icon: busicon2 },
+    { name: "AC",                 count: filterCounts["AC"],                 icon: busicon3 },
+    { name: "Sleeper",            count: filterCounts["Sleeper"],            icon: busicon4 },
+    { name: "Single Seats",       count: filterCounts["Single Seats"],       icon: busicon5 },
+    { name: "Seater",             count: filterCounts["Seater"],             icon: busicon6 },
+    { name: "NON AC",             count: filterCounts["NON AC"],             icon: busicon7 },
+    { name: "High Rated Buses",   count: filterCounts["High Rated Buses"],   icon: busicon8 },
+    { name: "Live Tracking",      count: filterCounts["Live Tracking"],      icon: busicon9 },
+    { name: "Volvo Buses",        count: filterCounts["Volvo Buses"],        icon: busicon10 },
+  ];
 
   // Prefetch seat layout on hover for instant perceived loading
   const handlePrefetchSeats = (bus: NormalizedBus) => {
@@ -776,7 +884,10 @@ function BusListContent() {
       price: String(bus.price),
       sourceCity: urlSourceName,
       destinationCity: urlDestName,
-      doj: urlDateParam
+      doj: urlDateParam,
+      departureTime: formatTime(bus.departureTime || ""),
+      arrivalTime: formatTime(bus.arrivalTime || ""),
+      rating: bus.rating || ""
     });
 
     if (bus.apiProvider === "VRL") {
@@ -823,19 +934,30 @@ function BusListContent() {
     <>
       <div className="sidebar-box mb-3">
         <div className="d-flex align-items-center gap-2 mb-3">
-          <img src={easyFilterIcon.src} alt="filter" style={{ width: "22px" }} />
+          <img
+            src={easyFilterIcon.src}
+            alt="filter"
+            style={{ width: "22px" }}
+          />
           <h6 className="fw-bold m-0 text-dark" style={{ fontSize: "16px" }}>{t.eazzyFilter || "Eazzy Filter"}</h6>
         </div>
 
-        <div className="d-flex align-items-center mb-4">
-          <div className="position-relative flex-grow-1">
-            <i className="bi bi-search text-muted" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "14px" }}></i>
-            <input type="text" placeholder={t.filterBuses || "Filter"} className="form-control filter-input input-stage-focus"
-              value={filterText} onChange={(e) => setFilterText(e.target.value)} />
-          </div>
-          <div className="ms-2 filter-mic-btn shadow-sm btn-bounce">
-            <i className="bi bi-mic-fill text-white" style={{ fontSize: "16px" }}></i>
-          </div>
+        <div className="filter-search-wrapper mb-4">
+          <input
+            type="text"
+            className="form-control ezzy-filter-search input-stage-focus"
+            placeholder={t.filterBuses || "Filter buses"}
+            value={filterInput}
+            onChange={(e) => {
+              setFilterInput(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleFilterSearch();
+              }
+            }}
+          />
+          <i className="bi bi-search search-icon" onClick={handleFilterSearch} style={{ cursor: "pointer" }}></i>
         </div>
 
         <div className="mb-2">
@@ -917,7 +1039,7 @@ function BusListContent() {
                   </div>
                 )}
                 {item === "Bus Operator" && (
-                  <div className="d-flex flex-column gap-2 custom-scrollbar" style={{ maxHeight: "150px", overflowY: "auto" }}>
+                  <div className="d-flex flex-column gap-2 bus-operator-list">
                     {busOperators.length > 0 ? busOperators.map((op, idx) => {
                       const displayOp = translatedNames[op] || op;
                       return (
@@ -979,8 +1101,44 @@ function BusListContent() {
       <ToastContainer />
 
       <style>{`
-        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .bus-operator-list {
+          max-height: 220px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: #0D2B4C #E5E7EB;
+        }
+        .bus-operator-list::-webkit-scrollbar {
+          width: 8px;
+        }
+        .bus-operator-list::-webkit-scrollbar-track {
+          background: #E5E7EB;
+        }
+        .bus-operator-list::-webkit-scrollbar-thumb {
+          background: #0D2B4C;
+          border-radius: 10px;
+        }
+        .filter-search-wrapper {
+          position: relative;
+          width: 90%;
+          margin: 0 auto;
+        }
+        .ezzy-filter-search {
+          width: 100%;
+          height: 40px;
+          border: 1px solid #cfd6e4;
+          border-radius: 9999px !important;
+          padding: 0 44px 0 14px !important;
+          font-size: 14px;
+        }
+        .search-icon {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 14px;
+          color: #6b7280;
+          z-index: 2;
+        }
       `}</style>
 
       {/* NAVBAR */}
@@ -1188,29 +1346,8 @@ function BusListContent() {
                   else if (raw.stageFare?.length > 0) displayPrice = Math.min(...raw.stageFare.map((f: any) => f.fare));
                 }
 
-                const depTimeCandidates = [
-                  bus.departureTime,
-                  raw.DeptTime,
-                  raw.departureTime,
-                  raw.RouteTime,
-                  raw.fromStation?.dateTime,
-                ];
-                const displayDepTime = normalizeTimeDisplay(
-                  depTimeCandidates.find(isMeaningfulTime) || "--:--",
-                  bus.apiProvider
-                );
-
-                const arrTimeCandidates = [
-                  bus.arrivalTime,
-                  raw.ApproxArrival,
-                  raw.arrivalTime,
-                  raw.ArrivalTime,
-                  raw.toStation?.dateTime,
-                ];
-                const displayArrTime = normalizeTimeDisplay(
-                  arrTimeCandidates.find(isMeaningfulTime) || "--:--",
-                  bus.apiProvider
-                );
+                const displayDepTime = formatTime(bus.departureTime || "");
+                const displayArrTime = formatTime(bus.arrivalTime || "");
 
                 let displayDuration = bus.duration;
                 if (!displayDuration || displayDuration === "---" || displayDuration === "NaNh NaNm" || displayDuration === "--") {
@@ -1222,40 +1359,7 @@ function BusListContent() {
                 }
                 if (displayDuration === "NaNh NaNm") displayDuration = "---";
 
-                let displaySeats = 0;
-
-                if (bus.apiProvider?.includes("EZEE")) {
-                  const seats = raw.bus?.seatLayoutList || raw.seatLayoutList || [];
-
-                  const availableFromLayout = seats.filter(
-                    (s: any) => s.seatStatus?.code === "AL"
-                  ).length;
-
-                  if (
-                    Number(raw.availableSeatCount) === 0 &&
-                    availableFromLayout > 0
-                  ) {
-                    displaySeats = availableFromLayout;
-                  } else {
-                    displaySeats = Number(raw.availableSeatCount || 0);
-                  }
-                } else {
-                  displaySeats =
-                    Number(
-                      raw.EmptySeats ??
-                      raw.emptySeats ??
-                      raw.seatsAvailable ??
-                      raw.availableSeats ??
-                      raw.AvailableSeats ??
-                      raw.SeatsAvailable ??
-                      bus.availableSeats ??
-                      0
-                    );
-
-                  if (isNaN(displaySeats)) {
-                    displaySeats = 0;
-                  }
-                }
+                const displaySeats = getAvailableSeats(bus);
 
                 const depTimeMatch = displayDepTime.match(/^([\d:]+)\s*([A-Z]{2})$/i);
                 const depTimeVal = depTimeMatch ? depTimeMatch[1] : displayDepTime;

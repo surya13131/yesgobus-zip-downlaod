@@ -1,8 +1,6 @@
 import { cityMapping } from "./cityMapping";
 
-
 const BASE_URL = "";
-const EZEE_BASE_URL = "";
 const CACHE_TTL_BUS_LIST = 3 * 60 * 1000; // 3 minutes
 const CACHE_TTL_SEAT_LAYOUT = 2 * 60 * 1000; // 2 minutes
 const CACHE_TTL_CITY = 10 * 60 * 1000; // 10 minutes
@@ -571,7 +569,7 @@ export const fetchEzeeBusesV2 = async (
 ): Promise<NormalizedBus[]> => {
   try {
 
-    const url = `${EZEE_BASE_URL}/api/bus/ezee/busList-v2/${encodeURIComponent(
+    const url = `${BASE_URL}/api/bus/ezee/busList-v2/${encodeURIComponent(
       sourceName
     )}/${encodeURIComponent(destName)}/${encodeURIComponent(
       journeyDate
@@ -617,13 +615,23 @@ export const fetchEzeeBusesV2 = async (
 
       console.log("EZEE Available Seats", calculatedAvailableSeats);
 
+      const departureTime =
+        bus?.fromStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
+        bus.departureTime || bus.deptTime || bus.DepartureTime ||
+        "--:--";
+
+      const arrivalTime =
+        bus?.toStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
+        bus.arrivalTime || bus.arrTime || bus.ArrivalTime ||
+        "--:--";
+
       return {
         id: bus.tripCode || bus.TripCode || bus.id || Math.random().toString(),
         apiProvider: "EZEE_V2",
         operatorName: bus.operatorName || bus.travels || bus.TravelsName || "Ezee Travels",
         busType: bus.busType || bus.BusType || "A/C Sleeper",
-        departureTime: bus.departureTime || bus.deptTime || bus.DepartureTime || "00:00",
-        arrivalTime: bus.arrivalTime || bus.arrTime || bus.ArrivalTime || "00:00",
+        departureTime,
+        arrivalTime,
         duration: bus.duration || "---",
         price: extractValidPrice(bus),
         availableSeats: calculatedAvailableSeats > 0 ? calculatedAvailableSeats : parseInt(bus.availableSeats || bus.seatsAvailable || bus.AvailableSeats || "0", 10),
@@ -655,7 +663,7 @@ export const fetchEzeeBusesV3 = async (
     }
 
     // 🔥 Hits the Test URL directly so it works alongside the Production VRL/SRS
-    const url = `${EZEE_BASE_URL}/api/bus/ezee/busList-v3/${encodeURIComponent(
+    const url = `${BASE_URL}/api/bus/ezee/busList-v3/${encodeURIComponent(
       sourceName
     )}/${encodeURIComponent(destName)}/${encodeURIComponent(
       journeyDate
@@ -701,13 +709,23 @@ export const fetchEzeeBusesV3 = async (
 
       console.log("EZEE Available Seats", calculatedAvailableSeats);
 
+      const departureTime =
+        bus?.fromStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
+        bus.departureTime || bus.deptTime ||
+        "--:--";
+
+      const arrivalTime =
+        bus?.toStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
+        bus.arrivalTime || bus.arrTime ||
+        "--:--";
+
       return {
         id: bus.tripCode || bus.id || bus.scheduleId || Math.random().toString(),
         apiProvider: "EZEE_V3",
         operatorName: bus.operatorName || bus.travels || "Ezee Travels",
         busType: bus.busType || "A/C Sleeper",
-        departureTime: bus.departureTime || bus.deptTime || "00:00",
-        arrivalTime: bus.arrivalTime || bus.arrTime || "00:00",
+        departureTime,
+        arrivalTime,
         duration: bus.duration || "---",
         price: extractValidPrice(bus),
         availableSeats: calculatedAvailableSeats > 0 ? calculatedAvailableSeats : parseInt(bus.availableSeats || bus.seatsAvailable || "0", 10),
@@ -787,7 +805,7 @@ export const fetchEzeeSeatLayout = async (
     }
 
     // 🔥 Hits the Test URL directly
-    const url = `${EZEE_BASE_URL}/api/bus/ezee/busMap/${encodeURIComponent(
+    const url = `${BASE_URL}/api/bus/ezee/busMap/${encodeURIComponent(
       tripCode
     )}/${encodeURIComponent(sourceStationCode)}/${encodeURIComponent(
       destStationCode
@@ -838,7 +856,7 @@ export const fetchEzeeSeatLayout = async (
 export const blockEzeeSeat = async (payload: any) => {
   try {
     // 🔥 Hits the Test URL directly
-    const res = await fetch(`${EZEE_BASE_URL}/api/bus/ezee/blockSeat`, {
+    const res = await fetch(`${BASE_URL}/api/bus/ezee/blockSeat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -853,7 +871,7 @@ export const blockEzeeSeat = async (payload: any) => {
 // ✅ EZEE CANCEL SEAT DETAILS API
 export const canCancelEzeeSeat = async (bookingId: string) => {
   try {
-    const res = await fetch(`${EZEE_BASE_URL}/api/bus/ezee/canCancelSeat/${bookingId}`);
+    const res = await fetch(`${BASE_URL}/api/bus/ezee/canCancelSeat/${bookingId}`);
     
     if (!res.ok) {
       console.error(`[Ezee Cancel Shield] Can Cancel API failed with status ${res.status}`);
@@ -870,7 +888,7 @@ export const canCancelEzeeSeat = async (bookingId: string) => {
 // ✅ EZEE CONFIRM CANCEL API
 export const confirmCancelEzeeSeat = async (payload: { bookingId: string, cca: string | number, ctpc: string }) => {
   try {
-    const res = await fetch(`${EZEE_BASE_URL}/api/bus/ezee/confirmCancelSeat`, {
+    const res = await fetch(`${BASE_URL}/api/bus/ezee/confirmCancelSeat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
