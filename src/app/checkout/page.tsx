@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense, useState, useEffect, useRef } from 'react';
 
-import { bookBusTicket } from "../components/api"; 
+import { bookBusTicket, BASE_URL } from "../components/api"; 
 
 interface CancelPreview {
   bookingId: string;
@@ -314,13 +314,13 @@ function CheckoutContent() {
       let options: any = {};
 
       if (provider === "VRL") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/sendVrlRequest/CancelDetails`;
+        endpoint = `${BASE_URL}/api/busBooking/sendVrlRequest/CancelDetails`;
         options = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pnrNo }) };
       } else if (provider === "SRS") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/getSrsCanCancelDetails/${finalBlockKey}/${seatsStr}`;
+        endpoint = `${BASE_URL}/api/busBooking/getSrsCanCancelDetails/${finalBlockKey}/${seatsStr}`;
         options = { method: "GET" };
       } else {
-        endpoint = `https://test.yesgobus.com/api/bus/ezee/canCancelSeat/${currentBookingId}`;
+        endpoint = `${BASE_URL}/api/bus/ezee/canCancelSeat/${currentBookingId}`;
         options = { method: "GET" };
       }
 
@@ -416,13 +416,13 @@ function CheckoutContent() {
       let options: any = {};
 
       if (cancelPreview.apiProvider === "VRL") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/sendVrlRequest/ConfirmCancellation`;
+        endpoint = `${BASE_URL}/api/busBooking/sendVrlRequest/ConfirmCancellation`;
         options = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pnrNo: cancelPreview.pnr }) };
       } else if (cancelPreview.apiProvider === "SRS") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/srsCancelBooking/${cancelPreview.blockKey}/${cancelPreview.seatNumbers}`;
+        endpoint = `${BASE_URL}/api/busBooking/srsCancelBooking/${cancelPreview.blockKey}/${cancelPreview.seatNumbers}`;
         options = { method: "GET" };
       } else {
-        endpoint = `https://test.yesgobus.com/api/bus/ezee/confirmCancelSeat`;
+        endpoint = `${BASE_URL}/api/bus/ezee/confirmCancelSeat`;
         options = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: cancelPreview.bookingId, cca: cancelPreview.cca, ctpc: cancelPreview.ctpc }) };
       }
 
@@ -433,7 +433,7 @@ function CheckoutContent() {
       if (res.ok || data.success === true || data.status === 0 || data.status === 200 || !!data.result) {
         
         try {
-          await fetch(`https://test.yesgobus.com/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
+          await fetch(`${BASE_URL}/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -444,7 +444,7 @@ function CheckoutContent() {
             })
           });
 
-          await fetch(`https://test.yesgobus.com/api/busBooking/sendCancelTicketMessage`, {
+          await fetch(`${BASE_URL}/api/busBooking/sendCancelTicketMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

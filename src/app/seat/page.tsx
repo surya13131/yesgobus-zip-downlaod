@@ -6,13 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import './seat.css';
 
 import { fetchSeatLayoutData, blockSeatLogic, NormalizedSeat } from "./seat"; 
+import { BASE_URL } from "../components/api";
 import Step1SeatSelection from './SeatSelection';
 import Step2PointSelection from './Drop';
 import Step3PassengerInfo from './passenger';
 
 export const fetchPassengerHistory = async (userId: string) => {
   try {
-    const res = await fetch(`https://test.yesgobus.com/api/busBooking/getAllBookings/${userId}`);
+    const res = await fetch(`${BASE_URL}/api/busBooking/getAllBookings/${userId}`);
     const data = await res.json();
     
     const extractedPassengers: {name: string, age: string, gender: string}[] = [];

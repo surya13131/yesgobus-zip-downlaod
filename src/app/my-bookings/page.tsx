@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { BASE_URL } from "../components/api";
 
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ const TicketModal = ({
   const handleCheckRefund = async () => {
     setIsFetchingRefund(true);
     try {
-      const res = await fetch(`https://test.yesgobus.com/api/busBooking/refundStatus/${bookingId}`);
+      const res = await fetch(`${BASE_URL}/api/busBooking/refundStatus/${bookingId}`);
       if (res.ok) {
         const data = await res.json();
         const finalData = data.data || data; 
@@ -340,7 +341,7 @@ export default function MyBookingsPage() {
          userId = "69412e89e1e82ea2792a99bb"; // Exact testing fallback used during booking
       }
       
-      const res = await fetch(`https://test.yesgobus.com/api/busBooking/getAllBookings/${userId}`, {
+      const res = await fetch(`${BASE_URL}/api/busBooking/getAllBookings/${userId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
       });
@@ -421,7 +422,7 @@ export default function MyBookingsPage() {
       let options: any = {};
 
       if (provider === "VRL") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/sendVrlRequest/CancelDetails`;
+        endpoint = `${BASE_URL}/api/busBooking/sendVrlRequest/CancelDetails`;
         options = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -429,11 +430,11 @@ export default function MyBookingsPage() {
         };
       } 
       else if (provider === "SRS") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/getSrsCanCancelDetails/${finalBlockKey}/${seatsStr}`;
+        endpoint = `${BASE_URL}/api/busBooking/getSrsCanCancelDetails/${finalBlockKey}/${seatsStr}`;
         options = { method: "GET" };
       }
       else {
-        endpoint = `https://test.yesgobus.com/api/bus/ezee/canCancelSeat/${bookingId}`;
+        endpoint = `${BASE_URL}/api/bus/ezee/canCancelSeat/${bookingId}`;
         options = { method: "GET" };
       }
 
@@ -533,7 +534,7 @@ export default function MyBookingsPage() {
       let options: any = {};
 
       if (cancelPreview.apiProvider === "VRL") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/sendVrlRequest/ConfirmCancellation`;
+        endpoint = `${BASE_URL}/api/busBooking/sendVrlRequest/ConfirmCancellation`;
         options = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -541,11 +542,11 @@ export default function MyBookingsPage() {
         };
       } 
       else if (cancelPreview.apiProvider === "SRS") {
-        endpoint = `https://test.yesgobus.com/api/busBooking/srsCancelBooking/${cancelPreview.blockKey}/${cancelPreview.seatNumbers}`;
+        endpoint = `${BASE_URL}/api/busBooking/srsCancelBooking/${cancelPreview.blockKey}/${cancelPreview.seatNumbers}`;
         options = { method: "GET" };
       }
       else {
-        endpoint = `https://test.yesgobus.com/api/bus/ezee/confirmCancelSeat`;
+        endpoint = `${BASE_URL}/api/bus/ezee/confirmCancelSeat`;
         options = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -568,7 +569,7 @@ export default function MyBookingsPage() {
         
         // --- LOCAL DB UPDATE ---
         try {
-          await fetch(`https://test.yesgobus.com/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
+          await fetch(`${BASE_URL}/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -580,7 +581,7 @@ export default function MyBookingsPage() {
           });
 
           if (targetBooking) {
-            await fetch(`https://test.yesgobus.com/api/busBooking/sendCancelTicketMessage`, {
+            await fetch(`${BASE_URL}/api/busBooking/sendCancelTicketMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -54,6 +54,20 @@ import {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+const getVrlArrivalTime = (bus: any): string => {
+  if (bus.ArrivalTime) {
+    return bus.ArrivalTime;
+  }
+
+  if (bus.ApproxArrival) {
+    const match = String(bus.ApproxArrival).match(/\d{1,2}:\d{2}\s?(AM|PM)/i);
+    if (match) {
+      return match[0];
+    }
+  }
+  return "--:--";
+};
+
 const formatApiDate = (d: Date) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -128,6 +142,15 @@ const formatTime = (time: string) => {
 
   const mins = m ? m.substring(0, 2) : "00";
   return `${String(displayHour).padStart(2, "0")}:${mins} ${ampm}`;
+};
+
+const formatDuration = (duration: string) => {
+  if (!duration) return "---";
+  const match = String(duration).trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return String(duration);
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  return `${hours}h ${minutes}m`;
 };
 
 const getBusType = (bus: NormalizedBus): string => {
@@ -1347,8 +1370,12 @@ function BusListContent() {
                 }
 
                 const displayDepTime = formatTime(bus.departureTime || "");
-                const displayArrTime = formatTime(bus.arrivalTime || "");
 
+                let arrivalTime = bus.arrivalTime || "--:--";
+                if (bus.apiProvider === 'VRL') {
+                  arrivalTime = getVrlArrivalTime(raw);
+                }
+                const displayArrTime = formatTime(arrivalTime);
                 let displayDuration = bus.duration;
                 if (!displayDuration || displayDuration === "---" || displayDuration === "NaNh NaNm" || displayDuration === "--") {
                   displayDuration = raw.TravelTime || raw.Duration || raw.duration || "---";
@@ -1358,6 +1385,7 @@ function BusListContent() {
                   }
                 }
                 if (displayDuration === "NaNh NaNm") displayDuration = "---";
+                displayDuration = formatDuration(displayDuration);
 
                 const displaySeats = getAvailableSeats(bus);
 

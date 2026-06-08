@@ -15,7 +15,7 @@ const nextConfig = {
     // 3. Ezee routes
        {
          source: "/ezee/:path*",
-         destination: "https://test.yesgobus.com/:path*",
+         destination: "https://apis.yesgobus.com/:path*",
        }
   ];
  }
