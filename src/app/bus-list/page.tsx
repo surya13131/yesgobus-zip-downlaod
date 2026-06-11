@@ -893,12 +893,12 @@ function BusListContent() {
   };
 
   const handleViewSeats = (bus: NormalizedBus, skipAuthCheck = false) => {
-    const isLoggedIn = localStorage.getItem("yesgo_user");
-    if (!isLoggedIn && !skipAuthCheck) {
-      setPendingBus(bus);
-      setShowAuthModal(true);
-      return;
-    }
+    // const isLoggedIn = localStorage.getItem("yesgo_user");
+    // if (!isLoggedIn && !skipAuthCheck) {
+    //   setPendingBus(bus);
+    //   setShowAuthModal(true);
+    //   return;
+    // }
 
     const params = new URLSearchParams({
       provider: bus.apiProvider,
