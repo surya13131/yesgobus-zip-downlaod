@@ -125,27 +125,19 @@ function SeatLayoutContent() {
   const journeyDateShort = getShortDate(doj);
 
   useEffect(() => {
+    // Load User from localStorage to auto-fill contact details
     try {
-      let p = "", e = "", n = "";
-      const keys = Object.keys(localStorage);
-      for (const k of keys) {
-        const val = localStorage.getItem(k) || "";
-        if (val.startsWith("{")) {
-          try {
-            const obj = JSON.parse(val);
-            if (obj.phone || obj.mobileNumber || obj.mobile) p = p || obj.phone || obj.mobileNumber || obj.mobile;
-            if (obj.email || obj.userEmail) e = e || obj.email || obj.userEmail;
-            if (obj.name || obj.firstName || obj.userName) n = n || obj.name || obj.firstName || obj.userName;
-          } catch(err) {}
-        }
+      const savedUser = localStorage.getItem('yesgo_user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        setContactPhone(user.phone || "");
+        setContactEmail(user.email || "");
+        setAutoFillName(user.name || "");
+      } else {
+        // Fallback for older storage keys if yesgo_user is not present
+        setContactPhone(localStorage.getItem("phone") || "");
+        setContactEmail(localStorage.getItem("email") || "");
       }
-      p = p || localStorage.getItem("mobileNumber") || localStorage.getItem("phoneNumber") || localStorage.getItem("phone") || "";
-      e = e || localStorage.getItem("email") || localStorage.getItem("userEmail") || "";
-      n = n || localStorage.getItem("name") || localStorage.getItem("userName") || localStorage.getItem("firstName") || "";
-
-      if (p) setContactPhone(p);
-      if (e) setContactEmail(e);
-      if (n) setAutoFillName(n);
     } catch (error) {
       console.warn("Could not parse user details from local storage.");
     }
@@ -301,19 +293,6 @@ function SeatLayoutContent() {
 
       setIsBlocking(true);
 
-      // ✅ FIX: Save complete passenger details to localStorage just before blocking seats.
-      const passengerDetails = passengers.map((p) => ({
-        name: p.name,
-        age: p.age,
-        gender: p.gender,
-        seatId: p.seatId,
-      }));
-      console.log("Saving to localStorage:", passengerDetails);
-      localStorage.setItem(
-        "localPassengerDetails",
-        JSON.stringify(passengerDetails)
-      );
-
       let exactOriginId = String(tripOriginId);
       let exactDestId = String(tripDestId);
 
@@ -411,10 +390,13 @@ function SeatLayoutContent() {
 
         {currentStep === 3 && (
           <Step3PassengerInfo
+            operatorName={operatorName} selectedBp={selectedBp} selectedDp={selectedDp} doj={doj} finalAmount={finalAmount}
             contactPhone={contactPhone} setContactPhone={setContactPhone} contactEmail={contactEmail} setContactEmail={setContactEmail} contactState={contactState} setContactState={setContactState}
             passengers={passengers} handlePaxChange={handlePaxChange} showSuggestions={showSuggestions} setShowSuggestions={setShowSuggestions} savedPassengers={savedPassengers}
             insurance={insurance} setInsurance={setInsurance} hasGst={hasGst} setHasGst={setHasGst} gstDetails={gstDetails} setGstDetails={setGstDetails} selectedSeats={selectedSeats} 
             busType={busTypeUrl || apiBusType}
+            departureTime={departureTime}
+            arrivalTime={arrivalTime}
           />
         )}
       </div>

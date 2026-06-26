@@ -35,7 +35,12 @@ export default function Step2PointSelection({
     return (
       <div 
         key={`${type}-${locationName}-${time}-${index}`}
-        onClick={() => type === 'boarding' ? setSelectedBp(point) : setSelectedDp(point)}
+        onClick={() => {
+          // ✅ FIX: Ensure the time is explicitly added to the selected object
+          const pointWithTime = { ...point, time: time };
+          if (type === 'boarding') setSelectedBp(pointWithTime);
+          else setSelectedDp(pointWithTime);
+        }}
         className="d-flex align-items-center p-3 mb-3 bg-white"
         style={{ cursor: 'pointer', borderRadius: '8px', border: isSelected ? '2px solid #0D2B4C' : '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s ease-in-out' }}
       >
@@ -45,7 +50,7 @@ export default function Step2PointSelection({
           </div>
         </div>
         <div>
-          <div className="fw-bold text-dark" style={{ fontSize: '14px' }}>{time} - {locationName}</div>
+          <div className="fw-bold text-dark" style={{ fontSize: '14px' }}>{locationName}</div>
           {landmark && <div className="text-muted mt-1" style={{ fontSize: '12px', lineHeight: '1.3' }}>{landmark}</div>}
         </div>
       </div>

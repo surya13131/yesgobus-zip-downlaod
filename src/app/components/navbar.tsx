@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import { ToastContainer, toast } from 'react-toastify';
 
 
@@ -125,29 +125,6 @@ const Navbar = () => {
       }
     });
   };
-
-  // Pure Frontend Google Login
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      try {
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        }).then(res => res.json());
-
-        loginUser({ 
-          name: userInfo.name, 
-          email: userInfo.email 
-        });
-        
-        showToast(`Welcome back, ${userInfo.name}!`);
-      } catch (err) {
-        showToast("Google Sign-in failed", "error");
-      }
-      setLoading(false);
-    },
-    onError: () => showToast("Google Authentication Failed", "error"),
-  });
 
 const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,12 +324,10 @@ const handleAuthAction = async (e: React.FormEvent) => {
                 </ul>
               </div>
             ) : (
-          /*
               <div className="d-flex align-items-center ms-4 ms-xxl-4 text-nowrap nav-link-wrapper" onClick={() => setShowAuthModal(true)} style={{ cursor: 'pointer' }}>
                 <Image src={icon6} alt="Login" width={22} height={22} className="me-2" />
                 <span className="fw-medium nav-text-hover" style={{ fontSize: '15px' }}>{t.login}</span>
               </div>
-          */ null
             )}
           </div>
         </div>
@@ -360,7 +335,7 @@ const handleAuthAction = async (e: React.FormEvent) => {
 
       {/* AUTH MODAL */}
       {/* Disabled the login modal window without breaking inner comments */}
-      {false && showAuthModal && (
+      {showAuthModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1060 }}>
           <div className="modal-dialog modal-lg modal-dialog-centered mx-3 mx-md-auto">
             <div className="modal-content border-0 overflow-hidden shadow-lg" style={{ borderRadius: '15px' }}>
@@ -371,17 +346,51 @@ const handleAuthAction = async (e: React.FormEvent) => {
                   <Image src={logo} alt="Logo" width={180} />
                   <h3 className="mt-4 fw-bold text-center">{t.welcome}</h3>
                   
-                  <button onClick={() => handleGoogleLogin()} 
-                          className="btn btn-light w-100 mt-5 py-2 shadow-sm d-flex align-items-center justify-content-center border-0 fw-bold"
-                          style={{ color: '#5f6368', fontSize: '14px', borderRadius: '8px' }}>
-                    <svg className="me-2" width="18" height="18" viewBox="0 0 18 18">
-                      <path d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84c-.21 1.12-.84 2.07-1.79 2.7l2.85 2.21c1.67-1.53 2.63-3.79 2.63-6.56z" fill="#4285F4"/>
-                      <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.85-2.21c-.79.53-1.8.85-3.11.85-2.39 0-4.41-1.61-5.14-3.77L.94 13.09C2.42 16.03 5.48 18 9 18z" fill="#34A853"/>
-                      <path d="M3.86 10.74c-.19-.56-.3-1.16-.3-1.74s.11-1.18.3-1.74L.94 4.91C.34 6.13 0 7.52 0 9s.34 2.87.94 4.09l2.92-2.35z" fill="#FBBC05"/>
-                      <path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.89 11.43 0 9 0 5.48 0 2.42 1.97.94 4.91l2.92 2.35c.73-2.16 2.75-3.77 5.14-3.77z" fill="#EA4335"/>
-                    </svg>
-                    {t.continueGoogle}
-                  </button>
+                  <div className="mt-5 w-100">
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        console.log("========== GOOGLE ==========");
+                        console.log("JWT Token:");
+                        console.log(credentialResponse.credential);
+
+                        const response = await fetch(
+                          "https://apis.yesgobus.com/api/user/googleSignIn",
+                          {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              jwtToken: credentialResponse.credential,
+                            }),
+                          }
+                        );
+
+                        const result = await response.json();
+
+                        console.log("Backend Response:");
+                        console.log(result);
+
+                        if (result.status === 200) {
+                          const userData = {
+                            name: result.data.fullName,
+                            email: result.data.email,
+                            phone: result.data.phoneNumber,
+                            _id: result.data._id,
+                          };
+                          loginUser(userData);
+                          console.log("Saved User", {
+                            name: result.data.fullName,
+                            email: result.data.email,
+                            phone: result.data.phoneNumber,
+                          });
+                        }
+                      }}
+                      onError={() => {
+                        console.log("Google Login Failed");
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Right Form Side (All Devices) */}
@@ -390,17 +399,51 @@ const handleAuthAction = async (e: React.FormEvent) => {
                   <h4 className="fw-bold mb-4" style={{ color: '#033564' }}>{authMode === 'login' ? 'Login' : 'Create Account'}</h4>
 
                   {/* Mobile-only Google Login Button */}
-                  <button onClick={() => handleGoogleLogin()} 
-                          className="btn border w-100 mb-4 py-2 shadow-sm d-flex d-md-none align-items-center justify-content-center fw-bold bg-white"
-                          style={{ color: '#5f6368', fontSize: '14px', borderRadius: '8px' }}>
-                    <svg className="me-2" width="18" height="18" viewBox="0 0 18 18">
-                      <path d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.49h4.84c-.21 1.12-.84 2.07-1.79 2.7l2.85 2.21c1.67-1.53 2.63-3.79 2.63-6.56z" fill="#4285F4"/>
-                      <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.85-2.21c-.79.53-1.8.85-3.11.85-2.39 0-4.41-1.61-5.14-3.77L.94 13.09C2.42 16.03 5.48 18 9 18z" fill="#34A853"/>
-                      <path d="M3.86 10.74c-.19-.56-.3-1.16-.3-1.74s.11-1.18.3-1.74L.94 4.91C.34 6.13 0 7.52 0 9s.34 2.87.94 4.09l2.92-2.35z" fill="#FBBC05"/>
-                      <path d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.89 11.43 0 9 0 5.48 0 2.42 1.97.94 4.91l2.92 2.35c.73-2.16 2.75-3.77 5.14-3.77z" fill="#EA4335"/>
-                    </svg>
-                    {t.continueGoogle}
-                  </button>
+                  <div className="d-md-none mb-4">
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        console.log("========== GOOGLE ==========");
+                        console.log("JWT Token:");
+                        console.log(credentialResponse.credential);
+
+                        const response = await fetch(
+                          "https://apis.yesgobus.com/api/user/googleSignIn",
+                          {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              jwtToken: credentialResponse.credential,
+                            }),
+                          }
+                        );
+
+                        const result = await response.json();
+
+                        console.log("Backend Response:");
+                        console.log(result);
+
+                        if (result.status === 200) {
+                          const userData = {
+                            name: result.data.fullName,
+                            email: result.data.email,
+                            phone: result.data.phoneNumber,
+                            _id: result.data._id,
+                          };
+                          loginUser(userData);
+                          console.log("Saved User", {
+                            name: result.data.fullName,
+                            email: result.data.email,
+                            phone: result.data.phoneNumber,
+                          });
+                        }
+                      }}
+                      onError={() => {
+                        console.log("Google Login Failed");
+                      }}
+                    />
+                  </div>
 
                   <div className="d-flex gap-2 mb-4 p-1 bg-light rounded-pill border">
                     <button onClick={() => {setAuthMode('login'); setIsOtpSent(false);}} className={`btn flex-fill rounded-pill fw-bold py-2 ${authMode === 'login' ? 'btn-primary border-0 shadow' : 'btn-light border-0 text-muted'}`}>Login</button>
@@ -509,14 +552,12 @@ const handleAuthAction = async (e: React.FormEvent) => {
                   </button>
                </li>
             ) : (
-          /*
               <li className="nav-item border-bottom nav-link-wrapper" onClick={() => setShowAuthModal(true)}>
                 <div className="nav-link d-flex align-items-center p-4" data-bs-dismiss="offcanvas" style={{ cursor: 'pointer' }}>
                   <Image src={icon6} alt="Login" width={24} height={24} className="me-3" />
                   <span className="fw-semibold nav-text-hover" style={{ fontSize: '16px' }}>{t.login}</span>
                 </div>
               </li>
-          */ null
             )}
           </ul>
         </div>
