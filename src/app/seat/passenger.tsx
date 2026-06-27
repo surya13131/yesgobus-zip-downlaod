@@ -37,14 +37,12 @@ export default function Step3PassengerInfo({
   insurance, setInsurance, hasGst, setHasGst, gstDetails, setGstDetails, selectedSeats, busType
 }: Step3Props) {
 
-  // ✅ FIX: Save passenger details to localStorage so CheckoutPage can read Age & Gender
   useEffect(() => {
     if (passengers && passengers.length > 0) {
       localStorage.setItem('localPassengerDetails', JSON.stringify(passengers));
     }
   }, [passengers]);
 
-  // ✅ FIX: Forcefully clean auto-filled or initial phone numbers containing +91 or 91
   useEffect(() => {
     if (contactPhone && /^(\+91\s*|91\s*)/.test(contactPhone)) {
       setContactPhone(contactPhone.replace(/^(\+91\s*|91\s*)/, ''));
@@ -70,12 +68,13 @@ export default function Step3PassengerInfo({
     fontWeight: 400,
     lineHeight: "22px",
     padding: "12px 16px",
+    width: "100%"
   };
 
   const figmaLabelStyle = {
     color: "#111827", 
     fontWeight: 600,
-    fontSize: "18px", // Section Heading
+    fontSize: "18px",
     lineHeight: "28px",
     fontFamily: "'Poppins', sans-serif",
     marginBottom: "4px"
@@ -97,7 +96,7 @@ export default function Step3PassengerInfo({
   };
 
   const parseTimeToMinutes = (timeStr: string): number => {
-    if (!timeStr) return 0; // ✅ FIX: Prevent crash if time string is undefined
+    if (!timeStr) return 0;
     const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
     if (!match) return 0;
     let hours = parseInt(match[1], 10);
@@ -112,7 +111,7 @@ export default function Step3PassengerInfo({
   const arrMinutes = parseTimeToMinutes(arrivalTime);
   let durationMinutes = arrMinutes - depMinutes;
   if (durationMinutes < 0) {
-    durationMinutes += 24 * 60; // Add a day if arrival is on the next day
+    durationMinutes += 24 * 60;
   }
   const durationHours = Math.floor(durationMinutes / 60);
   const durationMins = durationMinutes % 60;
@@ -134,25 +133,87 @@ export default function Step3PassengerInfo({
   const droppingPointTime = selectedDp?.time || selectedDp?.Time || selectedDp?.dpTime || "N/A";
 
   return (
-    <div className="row g-4 w-100 mx-0 justify-content-center passenger-info-page">
-      <div className="col-12 col-lg-6">
-      <style>{`
-        .form-control::placeholder {
-          font-size: 15px;
-          font-weight: 400;
-        }
-      `}</style>
+    <div className="row g-4 w-100 mx-0 justify-content-center passenger-info-page pb-5">
+      <div className="col-12 col-lg-7">
+        <style>{`
+          .form-control::placeholder {
+            font-size: 15px;
+            font-weight: 400;
+            color: #9ca3af;
+          }
+          .gender-group {
+            display: flex;
+            gap: 16px;
+          }
+          .gender-option {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          
+          .phone-wrapper:focus-within {
+            border-color: #86b7fe !important;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+          }
+
+          .verify-btn {
+            min-width: 140px;
+          }
+          
+          /* Aligned inputs globally */
+          .age-input-container {
+            width: 140px;
+          }
+
+          @media (max-width: 768px) {
+            .passenger-info-page [style*="padding: 32px"] {
+               padding: 24px 16px !important;
+            }
+            .passenger-info-page [style*="padding: 24px 32px"] {
+               padding: 20px 16px !important;
+            }
+            .contact-row, .passenger-row, .offer-row {
+               flex-direction: column !important;
+            }
+            .age-input-container {
+               width: 100% !important;
+            }
+            .verify-btn {
+               width: 100% !important;
+            }
+          }
+        `}</style>
+        
+        {/* CONTACT DETAILS */}
         <div style={figmaBoxStyle} className="mb-4">
           <h5 style={figmaLabelStyle}>Contact Details</h5>
           <p style={{...figmaTextStyle, fontSize: '13px', lineHeight: '20px'}} className="mb-4">Your ticket confirmation will be sent to the details below.</p>
           <div className="contact-details">
-            <div className="contact-row">
-              <div className="phone-input form-group">
-                <span className="country-code">+91 (IND)</span>
-                {/* ✅ FIX: Force value to strip double +91 visually and on typing */}
+            <div className="contact-row d-flex flex-column flex-md-row gap-3 mb-3 w-100">
+              <div className="phone-wrapper d-flex align-items-stretch flex-grow-1" style={{ 
+                ...figmaInputStyle, 
+                padding: 0, 
+                overflow: 'hidden',
+                backgroundColor: 'transparent'
+              }}>
+                <span className="country-code d-flex align-items-center" style={{ 
+                  padding: '0 8px 0 16px', 
+                  color: '#4B5563', 
+                  fontSize: '15px', 
+                  fontWeight: 500, 
+                  whiteSpace: 'nowrap',
+                  flex: '0 0 auto'
+                }}>
+                  +91
+                </span>
                 <input 
                   type="tel" 
-                  className="form-control shadow-none" 
+                  className="shadow-none border-0 m-0 w-100" 
                   placeholder="Phone Number *" 
                   maxLength={10}
                   inputMode="numeric"
@@ -162,12 +223,29 @@ export default function Step3PassengerInfo({
                     const value = e.target.value.replace(/\D/g, "");
                     setContactPhone(value.slice(0, 10));
                   }} 
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: '#333',
+                    fontSize: '15px',
+                    padding: '12px 16px 12px 4px',
+                    outline: 'none',
+                    minWidth: 0
+                  }}
                 />
               </div>
-              <input type="email" className="form-control shadow-none" placeholder="Email Address" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} style={figmaInputStyle} />
+
+              <input 
+                type="email" 
+                className="form-control shadow-none m-0 flex-grow-1" 
+                placeholder="Email Address" 
+                value={contactEmail} 
+                onChange={(e) => setContactEmail(e.target.value)} 
+                style={figmaInputStyle} 
+              />
             </div>
-            <div className="form-group">
-              <select className="form-select shadow-none" value={contactState} onChange={(e) => setContactState(e.target.value)} style={{...figmaInputStyle, color: contactState ? "#333" : "#676767"}}>
+            
+            <div className="form-group mb-2 w-100">
+              <select className="form-select shadow-none w-100" value={contactState} onChange={(e) => setContactState(e.target.value)} style={{...figmaInputStyle, color: contactState ? "#333" : "#676767"}}>
                 <option value="">State of Residence *</option>
                 <option value="Karnataka">Karnataka</option>
                 <option value="Tamil Nadu">Tamil Nadu</option>
@@ -181,10 +259,10 @@ export default function Step3PassengerInfo({
           </div>
         </div>
 
+        {/* PASSENGER DETAILS */}
         <div style={figmaBoxStyle} className="mb-4">
           <h5 style={figmaLabelStyle}>Passenger Details</h5>
           {passengers.map((pax, index) => {
-            
             const filteredSuggestions = pax.name
               ? savedPassengers
                   .filter(sp => sp.name.toLowerCase().includes(pax.name.toLowerCase()))
@@ -192,11 +270,11 @@ export default function Step3PassengerInfo({
               : [];
 
             return (
-              <div key={pax.seatId} className={`passenger-details ${index !== passengers.length - 1 ? "mb-4 pb-4 border-bottom" : ""}`}>
+              <div key={pax.seatId} className={`passenger-details w-100 ${index !== passengers.length - 1 ? "mb-4 pb-4 border-bottom" : ""}`}>
                 <p className="mb-3" style={{ fontSize: '14px', fontWeight: 500, color: '#6B7280' }}>Seat {pax.seatId}</p>
                 
-                <div className="passenger-row form-group">
-                  <div className="position-relative">
+                <div className="passenger-row d-flex flex-column flex-md-row gap-3 mb-3 w-100">
+                  <div className="position-relative m-0 flex-grow-1">
                     <input 
                       type="text" 
                       className="form-control shadow-none w-100" 
@@ -230,26 +308,29 @@ export default function Step3PassengerInfo({
                       </div>
                     )}
                   </div>
-                  <input 
-                    type="number" 
-                    className="form-control shadow-none w-100" 
-                    placeholder="Age *" 
-                    value={pax.age} 
-                    min={1}
-                    max={120}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "") {
-                        handlePaxChange(index, 'age', "");
-                      } else {
-                        handlePaxChange(index, 'age', value);
-                      }
-                    }} style={figmaInputStyle} />
+                  
+                  <div className="age-input-container m-0 flex-shrink-0">
+                    <input 
+                      type="number" 
+                      className="form-control shadow-none w-100" 
+                      placeholder="Age *" 
+                      value={pax.age} 
+                      min={1}
+                      max={120}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          handlePaxChange(index, 'age', "");
+                        } else {
+                          handlePaxChange(index, 'age', value);
+                        }
+                      }} style={figmaInputStyle} />
+                  </div>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group w-100">
                   <span style={{ fontSize: "15px", fontWeight: 500, lineHeight: "22px", color: "#676767" }}>Gender *</span>
-                  <div className="gender-group">
+                  <div className="gender-group mt-2">
                     <label className="gender-option" style={{ borderColor: pax.gender === 'Male' ? '#333' : '#D1D5DB', color: pax.gender === 'Male' ? '#000' : '#676767' }}>
                       <input type="radio" className="d-none" name={`gender-${index}`} value="Male" onChange={() => handlePaxChange(index, 'gender', 'Male')} /> 
                       Male
@@ -265,35 +346,30 @@ export default function Step3PassengerInfo({
           })}
         </div>
 
-        <div style={figmaBoxStyle} className="mb-4">
+        {/* OFFERS & COUPONS */}
+        <div style={figmaBoxStyle} className="mb-4 w-100">
           <div className="d-flex align-items-center gap-2 mb-3">
             <i className="bi bi-tag fs-5" style={{color: "#111827"}}></i>
             <h5 style={figmaLabelStyle} className="text-dark mb-0">Offers & Coupons</h5>
           </div>
           <div className="mt-3">
-            <div className="offer-row mb-3">
-              <input type="text" className="form-control shadow-none" placeholder="Enter Membership Code" style={figmaInputStyle} />
-              <button type="button">Verify</button>
+            <div className="offer-row d-flex flex-column flex-md-row gap-3 mb-3 w-100">
+              <input type="text" className="form-control shadow-none flex-grow-1 m-0" placeholder="Enter Membership Code" style={figmaInputStyle} />
+              <button type="button" className="btn btn-primary verify-btn m-0 flex-shrink-0" style={{ padding: '12px 16px', fontSize: '14px', borderRadius: '8px' }}>Verify</button>
             </div>
-            <div className="offer-row">
-              <input type="text" className="form-control shadow-none" placeholder="Enter Offer Code" style={figmaInputStyle} />
-              <button type="button">Verify</button>
+            
+            <div className="offer-row d-flex flex-column flex-md-row gap-3 w-100">
+              <input type="text" className="form-control shadow-none flex-grow-1 m-0" placeholder="Enter Offer Code" style={figmaInputStyle} />
+              <button type="button" className="btn btn-primary verify-btn m-0 flex-shrink-0" style={{ padding: '12px 16px', fontSize: '14px', borderRadius: '8px' }}>Verify</button>
             </div>
           </div>
         </div>
 
+        {/* TRAVEL INSURANCE */}
         <div style={figmaBoxStyle} className="mb-4">
           <h5 style={figmaLabelStyle}>Travel Insurance</h5>
           <p style={{...figmaTextStyle, fontSize: '14px'}} className="mb-4">Protect your trip for just ₹15 per passenger.</p>
           <div className="mb-4">
-            <div className="mb-3">
-              <p className="mb-0 text-dark" style={{ fontSize: "15px", fontWeight: 600, lineHeight: "22px" }}>Up to ₹5,000</p>
-              <p className="mb-0" style={{ fontSize: "13px", lineHeight: "18px", color: "#676767" }}>Loss of luggage</p>
-            </div>
-            <div className="mb-3">
-              <p className="mb-0 text-dark" style={{ fontSize: "15px", fontWeight: 600, lineHeight: "22px" }}>Up to ₹5,000</p>
-              <p className="mb-0" style={{ fontSize: "13px", lineHeight: "18px", color: "#676767" }}>Loss of luggage</p>
-            </div>
             <div className="mb-3">
               <p className="mb-0 text-dark" style={{ fontSize: "15px", fontWeight: 600, lineHeight: "22px" }}>Up to ₹5,000</p>
               <p className="mb-0" style={{ fontSize: "13px", lineHeight: "18px", color: "#676767" }}>Loss of luggage</p>
@@ -311,7 +387,8 @@ export default function Step3PassengerInfo({
           </div>
         </div>
 
-        <div style={{ ...figmaBoxStyle, padding: "24px 32px" }}>
+        {/* GST DETAILS */}
+        <div style={{ ...figmaBoxStyle, padding: "24px 32px" }} className="mb-4">
           <div className="d-flex align-items-start gap-3">
             <input type="checkbox" id="gstCheck" checked={hasGst} onChange={(e) => setHasGst(e.target.checked)} style={{ width: "20px", height: "20px", cursor: "pointer", marginTop: "3px" }} />
             <div>
@@ -320,56 +397,59 @@ export default function Step3PassengerInfo({
             </div>
           </div>
           {hasGst && (
-            <div className="row g-3 mt-3">
-              <div className="col-12 col-md-6"><input type="text" className="form-control shadow-none" placeholder="Company Name" value={gstDetails.name} onChange={e => setGstDetails({...gstDetails, name: e.target.value})} style={figmaInputStyle} /></div>
-              <div className="col-12 col-md-6"><input type="text" className="form-control shadow-none" placeholder="GST Number" value={gstDetails.gstId} onChange={e => setGstDetails({...gstDetails, gstId: e.target.value})} style={figmaInputStyle} /></div>
-              <div className="col-12"><input type="text" className="form-control shadow-none" placeholder="Company Address" value={gstDetails.address} onChange={e => setGstDetails({...gstDetails, address: e.target.value})} style={figmaInputStyle} /></div>
+            <div className="row g-3 mt-3 w-100 m-0">
+              <div className="col-12 col-md-6 px-0 pe-md-2"><input type="text" className="form-control shadow-none w-100" placeholder="Company Name" value={gstDetails.name} onChange={e => setGstDetails({...gstDetails, name: e.target.value})} style={figmaInputStyle} /></div>
+              <div className="col-12 col-md-6 px-0 ps-md-2"><input type="text" className="form-control shadow-none w-100" placeholder="GST Number" value={gstDetails.gstId} onChange={e => setGstDetails({...gstDetails, gstId: e.target.value})} style={figmaInputStyle} /></div>
+              <div className="col-12 px-0"><input type="text" className="form-control shadow-none w-100" placeholder="Company Address" value={gstDetails.address} onChange={e => setGstDetails({...gstDetails, address: e.target.value})} style={figmaInputStyle} /></div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="col-12 col-lg-6">
-        <div className="sticky-top" style={{ ...figmaBoxStyle, top: "100px", padding: "24px 24px" }}>
+      {/* RIGHT SIDEBAR (SUMMARY) */}
+      <div className="col-12 col-lg-5">
+        <div className="sticky-top" style={{ ...figmaBoxStyle, top: "24px", padding: "24px 24px", zIndex: 10 }}>
           <div className="mb-3">
             <h5 style={{...figmaLabelStyle, fontSize: '18px', fontWeight: 600}}>{operatorName}</h5>
             <p style={{...figmaTextStyle, fontSize: '14px', fontWeight: 400}} className="mb-0">{selectedSeats.length} Seat • {busType}</p>
           </div>
 
-          {/* Journey Timeline */}
-          <div className="d-flex gap-4">
-            <div className="d-flex flex-column align-items-center">
-              <div className="timeline-dot"></div>
-              <div className="timeline-line"></div>
-              <div className="timeline-dot"></div>
+          {/* OVERLAPPING FIX: Defined Timeline Tracks */}
+          <div className="d-flex gap-3 position-relative align-items-stretch">
+            <div className="d-flex flex-column align-items-center position-relative" style={{ minWidth: '16px' }}>
+              <div className="timeline-dot" style={{width: '12px', height: '12px', backgroundColor: '#111827', borderRadius: '50%', zIndex: 2, marginTop: '8px'}}></div>
+              <div className="timeline-line" style={{position: 'absolute', top: '14px', bottom: '14px', width: '2px', backgroundColor: '#e9ecef', zIndex: 1}}></div>
+              <div className="timeline-dot" style={{width: '12px', height: '12px', backgroundColor: '#111827', borderRadius: '50%', zIndex: 2, marginBottom: '8px', marginTop: 'auto'}}></div>
             </div>
-            <div className="d-flex flex-column justify-content-between w-100">
-              <div className="d-flex justify-content-between">
-                <div>
-                  <div style={{ fontSize: '26px', fontWeight: 700, color: '#111827' }}>{boardingPointTime}</div>
-                  <div style={{ fontSize: '13px', color: '#6B7280' }}>{boardingDate}</div>
+            
+            <div className="d-flex flex-column justify-content-between w-100 gap-3">
+              <div className="d-flex justify-content-between align-items-start gap-2">
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{boardingPointTime}</div>
+                  <div style={{ fontSize: '12px', color: '#6B7280' }}>{boardingDate}</div>
                 </div>
-                <div className="text-end">
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>{boardingPointName}</div>
-                  <div style={{ fontSize: '13px', color: '#6B7280' }}>Pickup Van/Bus</div>
+                <div className="text-end" style={{ maxWidth: '65%' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', wordBreak: 'break-word' }}>{boardingPointName}</div>
+                  <div style={{ fontSize: '12px', color: '#6B7280' }}>Pickup Van/Bus</div>
                 </div>
               </div>
-              <div className="text-muted my-2" style={{ fontSize: '13px' }}>{journeyDuration}</div>
-              <div className="d-flex justify-content-between">
-                <div>
-                  <div style={{ fontSize: '26px', fontWeight: 700, color: '#111827' }}>{droppingPointTime}</div>
-                  <div style={{ fontSize: '13px', color: '#6B7280' }}>{droppingDate}</div>
+              
+              <div className="text-muted my-1" style={{ fontSize: '13px', paddingLeft: '2px' }}>{journeyDuration}</div>
+              
+              <div className="d-flex justify-content-between align-items-start gap-2">
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>{droppingPointTime}</div>
+                  <div style={{ fontSize: '12px', color: '#6B7280' }}>{droppingDate}</div>
                 </div>
-                <div className="text-end">
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827' }}>{droppingPointName}</div>
+                <div className="text-end" style={{ maxWidth: '65%' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', wordBreak: 'break-word' }}>{droppingPointName}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <hr style={{ borderColor: "#777777", opacity: 0.4, margin: "16px 0" }} />
+          <hr style={{ borderColor: "#777777", opacity: 0.2, margin: "16px 0" }} />
 
-          {/* Seat & Passenger Details */}
           <div className="d-flex justify-content-between align-items-center mb-2">
             <span style={{...figmaTextStyle, fontWeight: 500, color: '#676767', fontSize: '14px'}}>Seat Details</span>
             <span className="text-end" style={{...figmaTextStyle, fontWeight: 600, color: '#333', fontSize: '14px'}}>{selectedSeats.map(s => `${s.id} • ${s.isUpper ? 'Upper' : 'Lower'} Deck`).join(', ')}</span>
@@ -379,7 +459,7 @@ export default function Step3PassengerInfo({
             <span className="text-end" style={{...figmaTextStyle, fontWeight: 600, color: '#333', fontSize: '14px'}}>{selectedSeats.length} Passenger{selectedSeats.length > 1 ? 's' : ''}</span>
           </div>
 
-          <hr style={{ borderColor: "#777777", opacity: 0.4, margin: "16px 0" }} />
+          <hr style={{ borderColor: "#777777", opacity: 0.2, margin: "16px 0" }} />
           <div className="d-flex justify-content-between align-items-center">
             <h6 style={{...figmaLabelStyle, fontSize: '16px', fontWeight: 600, marginBottom: 0}}>Fare</h6>
             <p style={{...figmaTextStyle, fontSize: '20px', fontWeight: 700, color: '#333'}} className="mb-0">₹{finalAmount.toFixed(2)}</p>

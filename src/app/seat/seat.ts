@@ -1588,6 +1588,13 @@ export const blockSeatLogic = async ({
 
   bookingInProgress = true;
 
+  // Get user loyalty status from localStorage
+  let isLoyaltyUser = false;
+  const userStr = localStorage.getItem("yesgo_user");
+  if (userStr) {
+    try { isLoyaltyUser = JSON.parse(userStr)?.isLoyaltyUser || false; } catch (e) {}
+  }
+
   try {
     let blockKey      = "";
     let finalSourceId = "";
@@ -1701,7 +1708,7 @@ export const blockSeatLogic = async ({
         no_of_seats:    String(selectedSeats.length),
         travel_date:    cleanDoj,
         userId:         srsUserId,
-        isLoyatyUser:   true,
+        isLoyaltyUser:  isLoyaltyUser,
         serviceTax:     safeServiceTax,
         discountValue:  0,
         customer_company_gst: hasGst
@@ -1771,8 +1778,8 @@ export const blockSeatLogic = async ({
       boardingPoint:     String(selectedBp?.stage || selectedBp?.name || ""),
       droppingPoint:     String(selectedDp?.stage || selectedDp?.name || ""),
       serviceTax:        safeServiceTax,
-      loyaltyPointsUsed: 0,
-      isLoyatyUser:      true,
+      loyaltyPointsUsed: 0, // This seems correct to keep as 0 for now
+      isLoyaltyUser:     isLoyaltyUser,
       isSrs:             provider === "SRS",
       isVrl:             provider === "VRL",
       isEzee:            provider === "EZEE_V2" || provider === "EZEE_V3",

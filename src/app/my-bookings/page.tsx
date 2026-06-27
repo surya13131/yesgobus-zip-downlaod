@@ -110,7 +110,21 @@ const BookingCard = ({
             </div>
           </div>
         </div>
-        <div className="d-flex align-items-center">
+        <div className="d-flex flex-column align-items-end">
+          <span 
+            className="badge mb-2" 
+            style={{ 
+              backgroundColor: (booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') ? '#dc3545' : '#198754',
+              fontSize: '12px'
+            }}
+          >
+            {(booking.status || (booking as any).bookingStatus || 'UPCOMING').toUpperCase()}
+          </span>
+          {(booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') && (booking as any).totalRefundAmount > 0 &&
+            <div className="text-success" style={{ fontSize: '13px', fontWeight: '500' }}>
+              Refund: ₹{(booking as any).totalRefundAmount}
+            </div>
+          }
           <i className="bi bi-chevron-right text-secondary fs-4"></i>
         </div>
       </div>
@@ -329,25 +343,30 @@ export default function MyBookingsPage() {
     setLoading(true);
     try {
       // ✅ FIX: Exact logic mapping from CheckoutPage ensuring test users see their data
-      const userStr = localStorage.getItem("yesgo_user");
-      let userId = "GUEST";
-      if (userStr) {
-         userId = JSON.parse(userStr).id || JSON.parse(userStr)._id;
-      } else {
-         userId = localStorage.getItem("userId") || localStorage.getItem("_id") || "";
-      }
+      console.log("=== MY BOOKINGS ===");
+      
+      const userStr = localStorage.getItem('yesgo_user');
+      console.log("Local Storage:", userStr);
 
-      if (!userId || userId === "GUEST" || userId === "guest_user" || userId.length !== 24) {
-         userId = "69412e89e1e82ea2792a99bb"; // Exact testing fallback used during booking
+      const user = userStr ? JSON.parse(userStr) : null;
+      const userId = user?._id || user?.id;
+      console.log("User ID:", userId);
+
+      if (!userId || userId.length < 10) {
+        console.warn("No valid user ID found, cannot fetch bookings.");
+        setBookings([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
       }
       
-      const res = await fetch(`${BASE_URL}/api/busBooking/getAllBookings/${userId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
+      const url = `${BASE_URL}/api/busBooking/getAllBookings/${userId}`;
+      console.log("API URL:", url);
+      const res = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json" } });
 
       if (res.ok) {
         const data = await res.json();
+        console.log("API Response:", data);
         // Sort bookings: newest first
         const sortedBookings = (data.data || data.bookings || []).sort((a: any, b: any) => {
            return new Date(b.doj || b.departureDate).getTime() - new Date(a.doj || a.departureDate).getTime();
@@ -355,6 +374,7 @@ export default function MyBookingsPage() {
         setBookings(sortedBookings);
       } else {
         setBookings([]);
+        console.error("API Response not OK:", res.status, await res.text());
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);

@@ -311,8 +311,26 @@ function SeatLayoutContent() {
       let exactOriginId = String(tripOriginId);
       let exactDestId = String(tripDestId);
 
+      // ✅ LOGGING: Prepare and log the payload before sending to blockSeatLogic
+      const userId = localStorage.getItem("userId") || localStorage.getItem("_id") || "";
+      const payload = {
+        provider, refNum, scheduleId, tripCode, sourceCity, destinationCity, doj,
+        operatorName, 
+        busType: busTypeUrl || apiBusType, 
+        selectedSeats, selectedBp, selectedDp, passengers,
+        contactEmail, contactPhone, hasGst, gstDetails, finalAmount, totalFare,
+        tripOriginId: exactOriginId, 
+        tripDestId: exactDestId,     
+        actualSourceId, actualDestId, departureTime, arrivalTime, insurance,
+        boardingPoints, droppingPoints, rawLayout,
+        userId // Ensure userId is in the payload
+      };
+
+      console.log("BookBus Payload (from seat page):", payload);
+
       try {
         const result = await blockSeatLogic({
+          ...payload, // Pass the constructed payload
           provider, refNum, scheduleId, tripCode, sourceCity, destinationCity, doj,
           operatorName, 
           busType: busTypeUrl || apiBusType, 
@@ -323,6 +341,9 @@ function SeatLayoutContent() {
           actualSourceId, actualDestId, departureTime, arrivalTime, insurance,
           boardingPoints, droppingPoints, rawLayout 
         });
+
+        // ✅ LOGGING: Log the immediate response from the booking/blocking logic
+        console.log("BookBus Response (from seat page):", result);
 
         if (!result?.bookingId) throw new Error("Invalid booking details returned from server. Booking failed.");
 
@@ -355,7 +376,7 @@ function SeatLayoutContent() {
   const lastDpName = droppingPoints.length > 0 ? (droppingPoints[droppingPoints.length - 1]?.stage || droppingPoints[droppingPoints.length - 1]?.locationName || droppingPoints[droppingPoints.length - 1]?.name || destinationCity) : destinationCity;
 
   return (
-    <div className="seat-page-wrapper" style={{ paddingBottom: "140px", backgroundColor: currentStep >= 2 ? "#fff" : "" }}>
+    <div className="seat-page-wrapper" style={{ backgroundColor: currentStep >= 2 ? "#fff" : "" }}>
       <style>{`
         .redbus-grid { display: grid; gap: 12px 24px; justify-content: center; }
         .seat-price-tooltip { position: absolute; top: -30px; background: #333; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }

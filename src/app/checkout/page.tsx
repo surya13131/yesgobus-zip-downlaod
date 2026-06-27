@@ -39,13 +39,21 @@ function CheckoutContent() {
 
   useEffect(() => {
     const uId = searchParams.get("userId");
-    const localUserId = localStorage.getItem("userId") || localStorage.getItem("_id");
-    let resolvedUser = uId || localUserId || "";
-    
-    if (!resolvedUser || resolvedUser === "guest_user" || resolvedUser.length !== 24) {
-      resolvedUser = "69412e89e1e82ea2792a99bb";
+    const userStr = localStorage.getItem("yesgo_user");
+    let localUserId = "";
+    if (userStr) {
+      try {
+        localUserId = JSON.parse(userStr)._id || JSON.parse(userStr).id;
+      } catch (e) {}
     }
-    setUserId(resolvedUser);
+    const resolvedUser = uId || localUserId;
+    
+    if (!resolvedUser || resolvedUser === "guest_user" || resolvedUser.length < 10) {
+      setErrorMessage("User session not found. Please log in and try again.");
+      setStatus('failed');
+    } else {
+      setUserId(resolvedUser);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -473,8 +481,8 @@ function CheckoutContent() {
         sessionStorage.setItem("savedTicketData", JSON.stringify(updatedTicket));
         localStorage.setItem("savedTicketData", JSON.stringify(updatedTicket));
         
-        // ✅ FIX: Force a hard browser redirect to completely jump to My Bookings and force the tab update
-        window.location.href = '/my-bookings?tab=cancelled';
+        // ✅ FIX: Use router.push for a client-side navigation, which is generally smoother.
+        router.push('/my-bookings?tab=cancelled');
         
       } else {
         alert(`Failed to confirm cancellation: ${data.message || rawData.message || 'Please try again.'}`);
