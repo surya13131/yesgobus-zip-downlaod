@@ -606,6 +606,18 @@ function BusListContent() {
 
   useEffect(() => {
     const loadBusesAndFilters = async () => {
+      // Fix 2 & 3: Reset filters on new search
+      setBoardingPoints([]);
+      setDroppingPoints([]);
+      setSelectedBoarding([]);
+      setSelectedDropping([]);
+      setSelectedOperators([]);
+      setSelectedDepTimes([]);
+      setSelectedArrTimes([]);
+      setSelectedBusTypes([]);
+      setSelectedAmenities([]);
+      setSelectedFeatures([]);
+      setActiveFilter(null);
       setLoading(true);
       try {
         let vSource: string | null = vrlSourceId;
@@ -627,14 +639,16 @@ function BusListContent() {
           const dMatch = destRes.find((c: any) => cleanStr(c.name) === cleanStr(urlDestName));
 
           if (sMatch) {
-            vSource = vSource || sMatch.vrlCityId || null;
-            sSource = sSource || sMatch.srsCityId || null;
-            eSourceCode = eSourceCode || sMatch.ezeeStationCode || "";
+            // Fix 4: Resolve fresh IDs
+            vSource = sMatch.vrlCityId || null;
+            sSource = sMatch.srsCityId || null;
+            eSourceCode = sMatch.ezeeStationCode || "";
           }
           if (dMatch) {
-            vDest = vDest || dMatch.vrlCityId || null;
-            sDest = sDest || dMatch.srsCityId || null;
-            eDestCode = eDestCode || dMatch.ezeeStationCode || "";
+            // Fix 4: Resolve fresh IDs
+            vDest = dMatch.vrlCityId || null;
+            sDest = dMatch.srsCityId || null;
+            eDestCode = dMatch.ezeeStationCode || "";
           }
         }
 
@@ -654,6 +668,18 @@ function BusListContent() {
           sSource && sDest ? fetchBusFilters("SRS", { sourceName: urlSourceName, destName: urlDestName, date: urlDateParam, sourceId: sSource, destId: sDest }).catch(() => null) : null
         ]);
 
+        // Fix 1: Correctly calculate SRS bus prices
+        const getLowestFare = (fareStr: string): number => {
+          if (!fareStr) return 0;
+        
+          const fares = fareStr
+            .split(",")
+            .map(item => Number(item.split(":")[1]))
+            .filter(price => !isNaN(price));
+        
+          return fares.length ? Math.min(...fares) : 0;
+        };
+
         const combinedRaw = [...(vrl || []), ...(srs || []), ...(ezee || [])];
 
         console.log(
@@ -668,9 +694,9 @@ function BusListContent() {
           .map(bus => {
             return {
               ...bus,
-              // Directly use the price calculated in api.ts
-              // It now correctly reflects the minimum available fare.
-              price: bus.price,
+              price: bus.apiProvider === 'SRS' && bus.originalData?.fare_str
+                ? getLowestFare(bus.originalData.fare_str)
+                : bus.price,
               rating: getSimulatedRating(bus)
             };
           });
@@ -684,18 +710,21 @@ function BusListContent() {
 
         setBuses(combined);
 
-        const dedupe = (prev: any[], next: any[]) =>
-          Array.from(new Map([...prev, ...next].map(item => [JSON.stringify(item), item])).values());
-
-        if (vrlFiltersData?.data?.boardingPoints)
-          setBoardingPoints(prev => dedupe(prev, vrlFiltersData.data.boardingPoints));
-        if (srsFiltersData?.boardingPoints)
-          setBoardingPoints(prev => dedupe(prev, srsFiltersData.boardingPoints));
-        if (vrlFiltersData?.data?.droppingPoints)
-          setDroppingPoints(prev => dedupe(prev, vrlFiltersData.data.droppingPoints));
-        if (srsFiltersData?.droppingPoints)
-          setDroppingPoints(prev => dedupe(prev, srsFiltersData.droppingPoints));
-
+        // Fix 2: Correctly set boarding/dropping points
+        const boarding = [
+          ...(vrlFiltersData?.data?.boardingPoints || []),
+          ...(srsFiltersData?.boardingPoints || [])
+        ];
+        const dropping = [
+          ...(vrlFiltersData?.data?.droppingPoints || []),
+          ...(srsFiltersData?.droppingPoints || [])
+        ];
+        setBoardingPoints(
+          Array.from(new Map(boarding.map(x => [JSON.stringify(x), x])).values())
+        );
+        setDroppingPoints(
+          Array.from(new Map(dropping.map(x => [JSON.stringify(x), x])).values())
+        );
       } catch (e) {
         console.error("API Error:", e);
       }

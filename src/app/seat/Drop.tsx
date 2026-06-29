@@ -42,7 +42,7 @@ export default function Step2PointSelection({
           else setSelectedDp(pointWithTime);
         }}
         className="d-flex align-items-center p-3 mb-3 bg-white"
-        style={{ cursor: 'pointer', borderRadius: '8px', border: isSelected ? '2px solid #0D2B4C' : '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s ease-in-out' }}
+        style={{ cursor: 'pointer', borderRadius: '8px', border: isSelected ? '2px solid #0D2B4C' : '1px solid #E5E7EB', background: isSelected ? '#F5F9FF' : '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'all 0.2s ease-in-out' }}
       >
         <div className="me-3 flex-shrink-0 d-flex align-items-center">
           <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${isSelected ? '#0D2B4C' : '#9CA3AF'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>

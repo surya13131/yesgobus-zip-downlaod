@@ -378,6 +378,15 @@ function SeatLayoutContent() {
   return (
     <div className="seat-page-wrapper" style={{ backgroundColor: currentStep >= 2 ? "#fff" : "" }}>
       <style>{`
+        .top-header {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          z-index: 1050;
+          background: #fff;
+          border-bottom: 1px solid #E5E7EB;
+        }
         .redbus-grid { display: grid; gap: 12px 24px; justify-content: center; }
         .seat-price-tooltip { position: absolute; top: -30px; background: #333; color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
         .seat-wrapper:hover .seat-price-tooltip { opacity: 1; }
@@ -391,10 +400,10 @@ function SeatLayoutContent() {
         </div>
       </div>
 
-      <div className="stepper-container d-flex justify-content-center gap-3 gap-md-5 pt-3 pb-2 mb-3 bg-white border-bottom shadow-sm">
-        <span onClick={() => setCurrentStep(1)} style={{ cursor: 'pointer', paddingBottom: '8px', borderBottom: currentStep === 1 ? '3px solid #e11d48' : 'none', color: currentStep === 1 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 1 ? '700' : '500' }}>1. Select seats</span>
-        <span onClick={() => { if(selectedSeats.length > 0) setCurrentStep(2) }} style={{ cursor: selectedSeats.length > 0 ? 'pointer' : 'default', paddingBottom: '8px', borderBottom: currentStep === 2 ? '3px solid #e11d48' : 'none', color: currentStep === 2 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 2 ? '700' : '500' }}>2. Board/Drop point</span>
-        <span style={{ paddingBottom: '8px', borderBottom: currentStep === 3 ? '3px solid #e11d48' : 'none', color: currentStep === 3 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 3 ? '700' : '500' }}>3. Passenger Info</span>
+      <div className="stepper-container d-flex justify-content-center gap-3 gap-md-5 pt-3 pb-2 mb-3 bg-white border-bottom shadow-sm" style={{ position: 'fixed', top: '72px', left: 0, width: '100%', zIndex: 1049 }}>
+        <span onClick={() => setCurrentStep(1)} style={{ cursor: 'pointer', paddingBottom: '8px', borderBottom: currentStep === 1 ? '3px solid #e11d48' : 'none', color: currentStep === 1 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 1 ? 700 : 500 }}>1. Select seats</span>
+        <span onClick={() => { if(selectedSeats.length > 0) setCurrentStep(2) }} style={{ cursor: selectedSeats.length > 0 ? 'pointer' : 'default', paddingBottom: '8px', borderBottom: currentStep === 2 ? '3px solid #e11d48' : 'none', color: currentStep === 2 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 2 ? 700 : 500 }}>2. Board/Drop point</span>
+        <span style={{ paddingBottom: '8px', borderBottom: currentStep === 3 ? '3px solid #e11d48' : 'none', color: currentStep === 3 ? '#e11d48' : '#6b7280', fontWeight: currentStep === 3 ? 700 : 500 }}>3. Passenger Info</span>
       </div>
 
       <div className="page-container">
@@ -446,11 +455,11 @@ function SeatLayoutContent() {
             <div className="fw-bold text-dark fs-5 text-truncate" style={{ maxWidth: "200px" }}>{selectedSeats.map(s => s.id).join(', ')}</div>
           </div>
           <div className="d-flex align-items-center gap-3 gap-md-4 w-100 w-sm-auto justify-content-between justify-content-sm-end">
-            <div className="text-end">
+            <div className="text-end" style={{ marginRight: '16px' }}>
               <div className="text-muted fw-medium" style={{ fontSize: "11px", marginBottom: "2px" }}>Amount<br/>(Tax excluded)</div>
               <div className="fw-bold text-dark fs-4">₹{finalAmount.toFixed(2)}</div> 
             </div>
-            <button className="btn text-white fw-bold px-4 py-3 d-flex justify-content-center align-items-center gap-2" style={{ background: "#0D2B4C", borderRadius: "8px", fontSize: "16px", minWidth: currentStep === 1 ? "140px" : "180px" }} onClick={handleContinue} disabled={isBlocking}>
+            <button className="btn text-white fw-bold px-4 d-flex justify-content-center align-items-center gap-2" style={{ background: "#0D2B4C", borderRadius: "8px", fontSize: "16px", minWidth: currentStep === 1 ? "140px" : "180px", height: '52px' }} onClick={handleContinue} disabled={isBlocking}>
               {isBlocking && <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>}
               {currentStep === 1 ? "Continue" : (isBlocking ? "Blocking Seats..." : "Continue booking")}
             </button>

@@ -205,7 +205,7 @@ const RenderSeat = React.memo(function RenderSeat({
       onClick={() => {
         if (!isRestRoom && !isEmptySpace && !isPantry) handleSeatClick(seat);
       }}
-      className="seat-wrapper position-relative d-flex flex-column"
+      className={`seat-wrapper position-relative d-flex flex-column ${isSeatSelected ? 'selected' : ''}`}
       style={{
         gridRow: gridRowValue,
         gridColumn: isLegend ? "auto" : seat.col + 1,
@@ -1301,6 +1301,21 @@ if (
         );
       }
 
+      const isGaneshR42 =
+        provider === "SRS" &&
+        operatorName?.trim() === "GANESH TRAVELS - ROUTE NO R42";
+
+      if (isGaneshR42) {
+        const seat9 = result.find(s => s.id === "9");
+        if (seat9) {
+          const seat10 = result.find(s => s.id === "10");
+          if (seat10) {
+            seat10.row = seat9.row + 1; // New logical row
+            seat10.gridRow = (seat9.gridRow ?? 0) ; // New visual grid row
+            seat10.col = 1; // Set to the second column
+          }
+        }
+      }
       return result;
     }
 
@@ -1309,7 +1324,7 @@ if (
       colNormalized.find(s => String(s.id).toUpperCase() === "REME")
     );
 
-    const visualGridResult = colNormalized.map(seat => {
+    let visualGridResult = colNormalized.map(seat => {
       const gridRowForApiRow = rowMap.get(seat.row)!;
       const seatsInSameRow = colNormalized.filter(s => s.row === seat.row);
       const rowHasSleeper = seatsInSameRow.some(s => s.isSleeper);
@@ -1371,6 +1386,28 @@ if (
         gridRow: s.gridRow
       }))
     );
+
+    const isGaneshR42 =
+      provider === "SRS" &&
+      operatorName?.trim() === "GANESH TRAVELS - ROUTE NO R42";
+
+    if (isGaneshR42) {
+      const seat9 = visualGridResult.find(s => s.id === "9");
+
+      if (seat9) {
+        visualGridResult = visualGridResult.map(seat => {
+          if (seat.id === "10") {
+            return {
+              ...seat,
+              row: seat9.row + 1,                // force logical row
+              gridRow: (seat9.gridRow ?? 0) + 1, // force visual row
+              col: 1,                            // force into second column
+            };
+          }
+          return seat;
+        });
+      }
+    }
 
     const isAbineshBus =
       provider === "EZEE_V3" &&
@@ -1503,6 +1540,30 @@ if (
         reme.gridRow = Math.max(1, (reme.gridRow || 0) - 1);
       }
     }
+
+    console.log(
+      "[GANESH FINAL]",
+      visualGridResult
+        .filter(s => s.id === "9" || s.id === "10")
+        .map(s => ({
+          id: s.id,
+          row: s.row,
+          col: s.col,
+          gridRow: s.gridRow,
+        }))
+    );
+
+    console.log(
+      "[Seat 9 & 10]",
+      visualGridResult
+        .filter(s => s.id === "9" || s.id === "10")
+        .map(s => ({
+          id: s.id,
+          row: s.row,
+          col: s.col,
+          gridRow: s.gridRow,
+        }))
+    );
 
     return visualGridResult;
   };
@@ -1782,7 +1843,13 @@ const maxCol = isHard49SeaterBus
   };
 
   return (
-    <div className="row step-1-row d-flex flex-column flex-lg-row justify-content-center align-items-start gap-4 gap-lg-0">
+    <div
+      className="row step-1-row d-flex flex-column flex-lg-row justify-content-center align-items-start"
+      style={{
+        gap: "20px",
+        marginTop: "30px"
+      }}
+    >
       <div
         className="col-12 col-lg-6 col-xl-6 px-lg-3 left-section"
         style={{ overflowX: "auto" }}
@@ -1804,7 +1871,7 @@ const maxCol = isHard49SeaterBus
         ) : (
           <div
             className="decks-scroll-wrapper"
-            style={{ overflowX: "auto", width: "100%" }}
+            style={{ overflowX: "auto", width: "100%", padding: "0 16px 12px" }}
           >
             <div
               className="decks-container d-flex justify-content-center gap-4"
@@ -1820,7 +1887,7 @@ const maxCol = isHard49SeaterBus
                     display: "flex",
                     flexDirection: "column",
                     paddingBottom: extraGapBus ? "70px" : "30px",
-                    paddingTop: "62px",
+                    paddingTop: "70px",
                   }}
                 >
                   <div className="deck-title">{normalizedUpperDeckSeats.length > 0 ? "Lower deck" : "Main deck"}</div>
@@ -1854,7 +1921,7 @@ const maxCol = isHard49SeaterBus
                     display: "flex",
                     flexDirection: "column",
                     paddingBottom: extraGapBus ? "70px" : "30px",
-                    paddingTop: "62px",
+                    paddingTop: "60px",
                   }}
                 >
                   <div className="deck-title">Upper deck</div>
@@ -1978,8 +2045,8 @@ const maxCol = isHard49SeaterBus
       </div>
 
       <div className="col-12 col-lg-6 col-xl-5 px-lg-3">
-        <div className="right-sidebar-container w-100">
-          <div className="seat-sidebar">
+        <div className="right-sidebar-container w-100" style={{ marginTop: 0, alignSelf: 'flex-start' }}>
+          <div className="seat-sidebar" style={{ padding: '32px' }}>
             <div className="d-flex justify-content-between align-items-start mb-4">
               <div>
                 <h5

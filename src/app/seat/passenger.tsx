@@ -63,9 +63,9 @@ export default function Step3PassengerInfo({
     border: "1px solid #777777",
     borderRadius: "8px",
     boxShadow: "none",
-    color: "#333",
+    color: "#111827",
     fontSize: "15px",
-    fontWeight: 400,
+    fontWeight: 500,
     lineHeight: "22px",
     padding: "12px 16px",
     width: "100%"
@@ -134,7 +134,7 @@ export default function Step3PassengerInfo({
 
   return (
     <div className="row g-4 w-100 mx-0 justify-content-center passenger-info-page pb-5">
-      <div className="col-12 col-lg-7">
+      <div className="col-12 col-lg-7" style={{ gap: '16px' }}>
         <style>{`
           .form-control::placeholder {
             font-size: 15px;
@@ -149,10 +149,26 @@ export default function Step3PassengerInfo({
             flex: 1;
             text-align: center;
             padding: 8px;
-            border-radius: 8px;
-            border: 1px solid;
+            border-radius: 10px;
+            border: 1px solid #D1D5DB;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: .2s;
+            font-size: 16px;
+          }
+          .gender-option.selected {
+            background: transparent;
+            color: #111827;
+            border: 2px solid #0D2B4C;
+            font-weight: 600;
+          }
+          .form-control:focus, .form-select:focus {
+            color: #000;
+            border-color: #0D2B4C;
+            box-shadow: none;
+          }
+          input:not(:placeholder-shown), select:not([value=""]) {
+            color: #000;
+            font-weight: 500;
           }
           
           .phone-wrapper:focus-within {
@@ -190,7 +206,7 @@ export default function Step3PassengerInfo({
         `}</style>
         
         {/* CONTACT DETAILS */}
-        <div style={figmaBoxStyle} className="mb-4">
+        <div style={{...figmaBoxStyle, borderRadius: '24px'}} className="mb-4">
           <h5 style={figmaLabelStyle}>Contact Details</h5>
           <p style={{...figmaTextStyle, fontSize: '13px', lineHeight: '20px'}} className="mb-4">Your ticket confirmation will be sent to the details below.</p>
           <div className="contact-details">
@@ -225,7 +241,7 @@ export default function Step3PassengerInfo({
                   }} 
                   style={{
                     backgroundColor: 'transparent',
-                    color: '#333',
+                    color: '#000',
                     fontSize: '15px',
                     padding: '12px 16px 12px 4px',
                     outline: 'none',
@@ -245,7 +261,7 @@ export default function Step3PassengerInfo({
             </div>
             
             <div className="form-group mb-2 w-100">
-              <select className="form-select shadow-none w-100" value={contactState} onChange={(e) => setContactState(e.target.value)} style={{...figmaInputStyle, color: contactState ? "#333" : "#676767"}}>
+              <select className="form-select shadow-none w-100" value={contactState} onChange={(e) => setContactState(e.target.value)} style={{...figmaInputStyle, color: contactState ? "#000" : "#676767"}}>
                 <option value="">State of Residence *</option>
                 <option value="Karnataka">Karnataka</option>
                 <option value="Tamil Nadu">Tamil Nadu</option>
@@ -260,7 +276,7 @@ export default function Step3PassengerInfo({
         </div>
 
         {/* PASSENGER DETAILS */}
-        <div style={figmaBoxStyle} className="mb-4">
+        <div style={{...figmaBoxStyle, borderRadius: '24px'}} className="mb-4">
           <h5 style={figmaLabelStyle}>Passenger Details</h5>
           {passengers.map((pax, index) => {
             const filteredSuggestions = pax.name
@@ -329,13 +345,13 @@ export default function Step3PassengerInfo({
                 </div>
 
                 <div className="form-group w-100">
-                  <span style={{ fontSize: "15px", fontWeight: 500, lineHeight: "22px", color: "#676767" }}>Gender *</span>
+                  <span style={{ fontSize: "16px", fontWeight: 500, lineHeight: "22px", color: "#676767" }}>Gender *</span>
                   <div className="gender-group mt-2">
-                    <label className="gender-option" style={{ borderColor: pax.gender === 'Male' ? '#333' : '#D1D5DB', color: pax.gender === 'Male' ? '#000' : '#676767' }}>
+                    <label className={`gender-option ${pax.gender === 'Male' ? 'selected' : ''}`}>
                       <input type="radio" className="d-none" name={`gender-${index}`} value="Male" onChange={() => handlePaxChange(index, 'gender', 'Male')} /> 
                       Male
                     </label>
-                    <label className="gender-option" style={{ borderColor: pax.gender === 'Female' ? '#333' : '#D1D5DB', color: pax.gender === 'Female' ? '#000' : '#676767' }}>
+                    <label className={`gender-option ${pax.gender === 'Female' ? 'selected' : ''}`}>
                       <input type="radio" className="d-none" name={`gender-${index}`} value="Female" onChange={() => handlePaxChange(index, 'gender', 'Female')} /> 
                       Female
                     </label>
@@ -347,7 +363,7 @@ export default function Step3PassengerInfo({
         </div>
 
         {/* OFFERS & COUPONS */}
-        <div style={figmaBoxStyle} className="mb-4 w-100">
+        <div style={{...figmaBoxStyle, borderRadius: '24px'}} className="mb-4 w-100">
           <div className="d-flex align-items-center gap-2 mb-3">
             <i className="bi bi-tag fs-5" style={{color: "#111827"}}></i>
             <h5 style={figmaLabelStyle} className="text-dark mb-0">Offers & Coupons</h5>
@@ -366,7 +382,7 @@ export default function Step3PassengerInfo({
         </div>
 
         {/* TRAVEL INSURANCE */}
-        <div style={figmaBoxStyle} className="mb-4">
+        <div style={{...figmaBoxStyle, borderRadius: '24px'}} className="mb-4">
           <h5 style={figmaLabelStyle}>Travel Insurance</h5>
           <p style={{...figmaTextStyle, fontSize: '14px'}} className="mb-4">Protect your trip for just ₹15 per passenger.</p>
           <div className="mb-4">
@@ -388,7 +404,7 @@ export default function Step3PassengerInfo({
         </div>
 
         {/* GST DETAILS */}
-        <div style={{ ...figmaBoxStyle, padding: "24px 32px" }} className="mb-4">
+        <div style={{ ...figmaBoxStyle, padding: "24px 32px", borderRadius: '24px' }} className="mb-4">
           <div className="d-flex align-items-start gap-3">
             <input type="checkbox" id="gstCheck" checked={hasGst} onChange={(e) => setHasGst(e.target.checked)} style={{ width: "20px", height: "20px", cursor: "pointer", marginTop: "3px" }} />
             <div>

@@ -16,6 +16,7 @@
   background: #F3F3F3;
   font-family: 'Poppins', sans-serif;
   overflow-x: hidden; 
+  padding-top: 140px;
   width: 100%; /* This was on body, moved to wrapper */
 }
 
@@ -400,7 +401,7 @@
   }
   .right-sidebar-container {
     position: sticky;
-    top: 120px;
+    top: 100px;
     margin-bottom: 110px;
     max-height: calc(100vh - 220px);
     overflow-y: auto;

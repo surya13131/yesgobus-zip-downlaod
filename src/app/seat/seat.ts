@@ -1535,6 +1535,23 @@ export const fetchSeatLayoutData = async ({
         fetchedSeats = formatSriBalajiLayout(fetchedSeats, detectedBusType);
       }
       fetchedSeats = applyBusTypeRules(fetchedSeats, detectedBusType, operatorName); // Pass operatorName
+
+      // Apply this LAST to prevent overrides
+      const isGaneshR42 =
+        provider === "SRS" &&
+        operatorName?.toUpperCase().includes("GANESH") &&
+        detectedBusType.includes("1+2") &&
+        detectedBusType.includes("SLEEPER/SEATER");
+
+      if (isGaneshR42) {
+        const lastRow = Math.max(...fetchedSeats.map(s => s.row));
+
+        fetchedSeats = fetchedSeats.map(seat =>
+          seat.id === "10"
+            ? { ...seat, row: lastRow + 1, col: 0 }
+            : seat
+        );
+      }
     }
   }
 
