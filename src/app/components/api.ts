@@ -180,7 +180,7 @@ export interface CitySuggestion {
 export const fetchCitySuggestions = async (
   query: string
 ): Promise<CitySuggestion[]> => {
-  if (query.length < 2) return [];
+  if (query.length < 1) return []; // This was already set to 1, confirming it is correct.
 
   try {
     const normalizedQuery = query.toLowerCase().trim();
@@ -197,11 +197,15 @@ export const fetchCitySuggestions = async (
     const cached = getCachedData(cacheKey);
     if (cached) return cached;
 
+    console.time("City Search");
+
     const res = await fetch(
       `${BASE_URL}/api/busBooking/searchCity/${searchQuery}`
     );
 
     const result = await res.json();
+
+    console.timeEnd("City Search");
 
     if (result.status !== 200) return [];
 

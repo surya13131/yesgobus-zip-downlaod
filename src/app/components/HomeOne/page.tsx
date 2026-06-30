@@ -131,6 +131,12 @@ export default function Home() {
   const [selectedSource, setSelectedSource] = useState<CitySuggestion | null>(null);
   const [selectedDest, setSelectedDest] = useState<CitySuggestion | null>(null);
 
+  // Refs for debouncing API calls to prevent race conditions and excessive requests
+  const sourceDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const destDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const latestSourceSearch = useRef("");
+  const latestDestSearch = useRef("");
+
   // GLOBAL LANGUAGE LISTENER (Listens to the Navbar)
   useEffect(() => {
     // 1. Initial Load
@@ -219,36 +225,59 @@ export default function Home() {
     setShowSourceDropdown(true);
   };
 
-  const handleSourceChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleSourceChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSourceText(val);
     setSelectedSource(null);
-    
-    if (val.length >= 2) {
-      const results = await fetchCitySuggestions(val);
-      setSourceSuggestions(results);
-      setShowSourceDropdown(true);
-    } else if (val.length === 0) { // When user clears the input
+    latestSourceSearch.current = val;
+
+    if (sourceDebounceRef.current) {
+      clearTimeout(sourceDebounceRef.current);
+    }
+
+    if (val.length === 0) {
       handleSourceFocus(); // Re-show recent searches
-    } else {
       setSourceSuggestions([]);
       setShowSourceDropdown(false);
+      return;
+    }
+
+    // ✅ FIX: Changed from >= 2 to >= 1 to allow single-character search
+    if (val.length >= 1) {
+      sourceDebounceRef.current = setTimeout(async () => {
+        const results = await fetchCitySuggestions(val);
+        if (latestSourceSearch.current === val) {
+          setSourceSuggestions(results);
+          setShowSourceDropdown(true);
+        }
+      }, 300); // 300ms delay
     }
   };
 
-  const handleDestChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleDestChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setDestText(val);
     setSelectedDest(null);
-    
-    if (val.length >= 2) {
-      const results = await fetchCitySuggestions(val);
-      setDestSuggestions(results);
-      setShowDestDropdown(true);
-    }  else {
+    latestDestSearch.current = val;
+
+    if (destDebounceRef.current) {
+      clearTimeout(destDebounceRef.current);
+    }
+
+    if (val.length < 1) {
       setDestSuggestions([]);
       setShowDestDropdown(false);
+      return;
     }
+
+    // ✅ FIX: Changed from >= 2 to >= 1 to allow single-character search
+    destDebounceRef.current = setTimeout(async () => {
+      const results = await fetchCitySuggestions(val);
+      if (latestDestSearch.current === val) {
+        setDestSuggestions(results);
+        setShowDestDropdown(true);
+      }
+    }, 300); // 300ms delay
   };
 
   const handleSwap = () => {
