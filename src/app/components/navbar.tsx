@@ -16,15 +16,15 @@ import icon5 from './assest/icon 5.svg';
 import icon6 from './assest/icon 6.svg';
 
 // API
-import { requestLoginOtp, requestSignupOtp, verifyOtp } from './api';
+import { requestLoginOtp, requestSignupOtp, verifyOtp, BASE_URL } from './api';
 
 // Supported Languages List
 const SUPPORTED_LANGUAGES = [
-  { code: 'EN', name: 'English' },
-  { code: 'TA', name: 'Tamil' },
-  { code: 'KN', name: 'Kannada' },
-  { code: 'TE', name: 'Telugu' },
-  { code: 'ML', name: 'Malayalam' }
+  { code: "EN", name: "English" },
+  { code: "TA", name: "தமிழ்" },
+  { code: "KN", name: "ಕನ್ನಡ" },
+  { code: "TE", name: "తెలుగు" },
+  { code: "ML", name: "മലയാളം" }
 ];
 
 // Local Navbar Translations
@@ -353,8 +353,7 @@ const handleAuthAction = async (e: React.FormEvent) => {
                         console.log("JWT Token:");
                         console.log(credentialResponse.credential);
 
-                        const response = await fetch(
-                          "https://apis.yesgobus.com/api/user/googleSignIn",
+                        const response = await fetch(`${BASE_URL}/api/user/googleSignIn`,
                           {
                             method: "POST",
                             headers: {
@@ -406,8 +405,7 @@ const handleAuthAction = async (e: React.FormEvent) => {
                         console.log("JWT Token:");
                         console.log(credentialResponse.credential);
 
-                        const response = await fetch(
-                          "https://apis.yesgobus.com/api/user/googleSignIn",
+                        const response = await fetch(`${BASE_URL}/api/user/googleSignIn`,
                           {
                             method: "POST",
                             headers: {
