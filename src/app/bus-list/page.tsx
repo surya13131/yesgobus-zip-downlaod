@@ -45,6 +45,8 @@ import {
   fetchVrlSeatLayout,
   fetchSrsSeatLayout,
   fetchEzeeSeatLayout,
+  fetchVrlBusesV2,
+  fetchSrsBusesV2,
   requestLoginOtp,
   requestSignupOtp,
   verifyOtp,
@@ -660,27 +662,64 @@ function BusListContent() {
           date: urlDateParam
         });
 
-        const [vrl, srs, ezee, vrlFiltersData, srsFiltersData] = await Promise.all([
-          vSource && vDest ? fetchVrlBuses(urlSourceName, urlDestName, vSource, vDest, urlDateParam).catch(() => []) : [],
-          sSource && sDest ? fetchSrsBuses(urlSourceName, urlDestName, sSource, sDest, urlDateParam).catch(() => []) : [],
-          fetchEzeeBusesV3(urlSourceName, urlDestName, urlDateParam, eSourceCode || undefined, eDestCode || undefined).catch(() => []),
-          vSource && vDest ? fetchBusFilters("VRL", { sourceName: urlSourceName, destName: urlDestName, date: urlDateParam, sourceId: vSource, destId: vDest }).catch(() => null) : null,
-          sSource && sDest ? fetchBusFilters("SRS", { sourceName: urlSourceName, destName: urlDestName, date: urlDateParam, sourceId: sSource, destId: sDest }).catch(() => null) : null
+        const [
+          vrlV3,
+          vrlV2,
+          srsV3,
+          srsV2,
+          ezeeV3,
+          ezeeV2,
+          vrlFiltersData,
+          srsFiltersData,
+        ] = await Promise.all([
+          vSource && vDest
+            ? fetchVrlBuses(urlSourceName, urlDestName, vSource, vDest, urlDateParam)
+            : Promise.resolve([]),
+          fetchVrlBusesV2(urlSourceName, urlDestName, urlDateParam),
+          sSource && sDest
+            ? fetchSrsBuses(urlSourceName, urlDestName, sSource, sDest, urlDateParam)
+            : Promise.resolve([]),
+          sSource && sDest
+            ? fetchSrsBusesV2(urlSourceName, urlDestName, urlDateParam, sSource, sDest)
+            : Promise.resolve([]),
+          eSourceCode && eDestCode
+            ? fetchEzeeBusesV3(
+                urlSourceName,
+                urlDestName,
+                urlDateParam,
+                eSourceCode,
+                eDestCode
+              )
+            : Promise.resolve([]),
+          Promise.resolve([]), // fetchEzeeBusesV2 is not defined in this file's imports, assuming it's not needed here based on user request.
+          vSource && vDest
+            ? fetchBusFilters("VRL", {
+                sourceName: urlSourceName,
+                destName: urlDestName,
+                date: urlDateParam,
+                sourceId: vSource,
+                destId: vDest,
+              })
+            : null,
+          sSource && sDest
+            ? fetchBusFilters("SRS", {
+                sourceName: urlSourceName,
+                destName: urlDestName,
+                date: urlDateParam,
+                sourceId: sSource,
+                destId: sDest,
+              })
+            : null,
         ]);
 
-        // Fix 1: Correctly calculate SRS bus prices
-        const getLowestFare = (fareStr: string): number => {
-          if (!fareStr) return 0;
-        
-          const fares = fareStr
-            .split(",")
-            .map(item => Number(item.split(":")[1]))
-            .filter(price => !isNaN(price));
-        
-          return fares.length ? Math.min(...fares) : 0;
-        };
-
-        const combinedRaw = [...(vrl || []), ...(srs || []), ...(ezee || [])];
+        const combinedRaw = [
+          ...(vrlV3 || []),
+          ...(vrlV2 || []),
+          ...(srsV3 || []),
+          ...(srsV2 || []),
+          ...(ezeeV3 || []),
+          ...(ezeeV2 || []),
+        ];
 
         console.log(
           "ZERO SEAT BUSES",
@@ -689,24 +728,22 @@ function BusListContent() {
           )
         );
 
-        const combined = combinedRaw
-          .filter(bus => getAvailableSeats(bus) > 0)
-          .map(bus => {
-            return {
-              ...bus,
-              price: bus.apiProvider === 'SRS' && bus.originalData?.fare_str
-                ? getLowestFare(bus.originalData.fare_str)
-                : bus.price,
-              rating: getSimulatedRating(bus)
-            };
-          });
+        const combined = combinedRaw.filter(bus => getAvailableSeats(bus) > 0).map(bus => ({
+          ...bus,
+          rating: getSimulatedRating(bus),
+        }));
 
         console.log(
           "AFTER FILTER",
           combined.length
         );
 
-        console.log(`🚌 BUS COUNTS -> VRL: ${vrl?.length ?? 0} | SRS: ${srs?.length ?? 0} | EZEE: ${ezee?.length ?? 0} | TOTAL: ${combined.length}`);
+        console.log("VRL V3:", (vrlV3 || []).length);
+        console.log("VRL V2:", (vrlV2 || []).length);
+        console.log("SRS V3:", (srsV3 || []).length);
+        console.log("SRS V2:", (srsV2 || []).length);
+        console.log("EZEE V3:", (ezeeV3 || []).length);
+        console.log("EZEE V2:", (ezeeV2 || []).length);
 
         setBuses(combined);
 

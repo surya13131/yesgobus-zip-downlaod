@@ -1,6 +1,8 @@
 import {
   fetchVrlBuses,
+  fetchVrlBusesV2,
   fetchSrsBuses,
+  fetchSrsBusesV2,
   fetchEzeeBusesV2,
   fetchEzeeBusesV3,
   fetchCitySuggestions,
@@ -19,6 +21,8 @@ export const fetchAllBusData = async (
   ezeeSourceCode?: string | null,
   ezeeDestCode?: string | null
 ) => {
+  console.log("fetchAllBusData called");
+
   let vSource = vrlSourceId;
   let vDest = vrlDestId;
   let sSource = srsSourceId;
@@ -50,21 +54,79 @@ export const fetchAllBusData = async (
   }
 
   // 2. Fetch all data in parallel
-  const [vrl, srs, ezeeV2, ezeeV3, vrlFiltersData, srsFiltersData] = await Promise.all([
-    vSource && vDest ? fetchVrlBuses(sourceName, destName, vSource, vDest, journeyDate) : [],
-    sSource && sDest ? fetchSrsBuses(sourceName, destName, sSource, sDest, journeyDate) : [],
-    fetchEzeeBusesV2(sourceName, destName, journeyDate),
-    eSource && eDest ? fetchEzeeBusesV3(sourceName, destName, journeyDate, eSource, eDest) : [],
-    vSource && vDest ? fetchBusFilters("VRL", { sourceName, destName, date: journeyDate, sourceId: vSource, destId: vDest }) : null,
-    sSource && sDest ? fetchBusFilters("SRS", { sourceName, destName, date: journeyDate, sourceId: sSource, destId: sDest }) : null
+  const [
+    vrlV3,
+    vrlV2,
+    srsV3,
+    srsV2,
+    ezeeV2,
+    ezeeV3,
+    vrlFiltersData,
+    srsFiltersData,
+  ] = await Promise.all([
+    (async () => {
+      console.log("Calling VRL V3");
+      return vSource && vDest ? fetchVrlBuses(sourceName, destName, vSource, vDest, journeyDate) : Promise.resolve([]);
+    })(),
+    (async () => {
+      console.log("Calling VRL V2");
+      return vSource && vDest ? fetchVrlBusesV2(sourceName, destName, journeyDate) : Promise.resolve([]);
+    })(),
+    (async () => {
+      console.log("Calling SRS V3");
+      return sSource && sDest ? fetchSrsBuses(sourceName, destName, sSource, sDest, journeyDate) : Promise.resolve([]);
+    })(),
+    (async () => {
+      console.log("Calling SRS V2");
+      return sSource && sDest ? fetchSrsBusesV2(sourceName, destName, journeyDate, sSource, sDest) : Promise.resolve([]);
+    })(),
+    (async () => {
+      console.log("Calling EZEE V2");
+      return fetchEzeeBusesV2(sourceName, destName, journeyDate);
+    })(),
+    (async () => {
+      console.log("Calling EZEE V3");
+      return eSource && eDest
+        ? fetchEzeeBusesV3(sourceName, destName, journeyDate, eSource, eDest)
+        : Promise.resolve([]);
+    })(),
+    vSource && vDest
+      ? fetchBusFilters("VRL", {
+          sourceName,
+          destName,
+          date: journeyDate,
+          sourceId: vSource,
+          destId: vDest,
+        })
+      : null,
+
+    sSource && sDest
+      ? fetchBusFilters("SRS", {
+          sourceName,
+          destName,
+          date: journeyDate,
+          sourceId: sSource,
+          destId: sDest,
+        })
+      : null,
   ]);
+
+  console.log("VRL V3", vrlV3.length);
+  console.log("VRL V2", vrlV2.length);
+  console.log("SRS V3", srsV3.length);
+  console.log("SRS V2", srsV2.length);
+  console.log("EZEE V2", ezeeV2.length);
+  console.log("EZEE V3", ezeeV3.length);
+
 
   // 3. Combine Buses
   let combinedBuses: NormalizedBus[] = [
-    ...(vrl || []),
-    ...(srs || []),
+    ...(vrlV3 || []),
+    ...(vrlV2 || []),
+    ...(srsV3 || []),
+    ...(srsV2 || []),
     ...(ezeeV2 || []),
-    ...(ezeeV3 || [])
+    ...(ezeeV3 || []),
   ].filter(bus => Number(bus.availableSeats ?? 0) > 0);
 
   // 4. Combine Filters (Boarding / Dropping)

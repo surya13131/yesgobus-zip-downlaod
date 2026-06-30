@@ -361,6 +361,70 @@ export const fetchVrlBuses = async (
   return [];
 };
 
+/* ---------------- VRL BUS LIST (V2) ---------------- */
+
+export const fetchVrlBusesV2 = async (
+  sourceName: string,
+  destName: string,
+  date: string
+): Promise<NormalizedBus[]> => {
+  console.log("========== VRL V2 ==========");
+  console.log(sourceName, destName, date);
+
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+  const searchSource = sourceName.toLowerCase();
+  const searchDest = destName.toLowerCase();
+
+  // VRL seems to prefer capitalized names. We'll try the apiName from mapping first, then capitalize.
+  const sourceAliases = (cityMapping[searchSource] as any)?.apiName ? [(cityMapping[searchSource] as any).apiName] : [capitalize(sourceName)];
+  const destAliases = (cityMapping[searchDest] as any)?.apiName ? [(cityMapping[searchDest] as any).apiName] : [capitalize(destName)];
+
+  try {
+    for (const from of sourceAliases) {
+      for (const to of destAliases) {
+        // Use capitalized names for VRL V2 as it seems to prefer them, based on 404 errors.
+        const url = `${BASE_URL}/api/busBooking/getVrlBusDetailsV2/${capitalize(from)}/${capitalize(to)}/${date}`;
+        console.log("Calling VRL V2 URL:", url);
+
+        const res = await fetch(url);
+        console.log("VRL V2 Status:", res.status);
+
+        if (res.ok) {
+          const result = await res.json();
+          console.log("VRL V2 Response:", result);
+          const data = Array.isArray(result) ? result : (result.data || result.result || result.buses || []);
+
+          if (data.length > 0) {
+            return data.map((bus: any): NormalizedBus | null => {
+              const referenceNumber = bus.ReferenceNumber || bus.referenceNumber || bus.RefNo || null;
+              if (!referenceNumber || referenceNumber === "0" || referenceNumber === 0) return null;
+              const finalRef = String(referenceNumber);
+              return {
+                id: finalRef,
+                operatorName: bus.CompanyName?.trim() || bus.companyName || "VRL Travels",
+                busType: bus.BusTypeName?.trim() || bus.busType || "AC Sleeper (2+1)",
+                departureTime: bus.RouteTime || bus.DeptTime || bus.departureTime || "--:--",
+                arrivalTime: bus.ApproxArrival || bus.ArrivalTime || bus.arrivalTime || "--:--",
+                duration: bus.TravelTime || bus.Duration || bus.duration || "--",
+                price: getMinimumAvailableFare(bus) || extractValidPrice(bus),
+                availableSeats: bus.EmptySeats || bus.AvailableSeats || bus.availableSeats || 0,
+                rating: "4.5",
+                apiProvider: "VRL",
+                originalData: { ...bus, referenceNumber: finalRef },
+              };
+            }).filter(Boolean) as NormalizedBus[];
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("VRL V2 failed", error);
+  }
+
+  return [];
+};
+
 /* ---------------- SRS BUS LIST ---------------- */
 
 export const fetchSrsBuses = async (
@@ -416,6 +480,86 @@ export const fetchSrsBuses = async (
 
   } catch (err) {
     console.warn("SRS API failed", err);
+    return [];
+  }
+};
+
+/* ---------------- SRS BUS LIST (V2) ---------------- */
+
+export const fetchSrsBusesV2 = async (
+  sourceName: string,
+  destName: string,
+  date: string,
+  sourceId: string,
+  destId: string
+): Promise<NormalizedBus[]> => {
+  const getSrsMinAvailableFare = (bus: any): number => {
+    const available = bus?.bus_layout?.available ?? "";
+    const fares = available
+      .split(",")
+      .map((item: string) => Number(item.split("|")[1]))
+      .filter((v: number) => !isNaN(v) && v > 0);
+    return fares.length ? Math.min(...fares) : 0;
+  };
+
+  const mapData = (data: any[]): NormalizedBus[] =>
+    data.map((bus: any): NormalizedBus => {
+      const srsMinFare = getSrsMinAvailableFare(bus);
+      return {
+        id: bus.id?.toString() || Math.random().toString(),
+        operatorName: bus.operator_service_name?.trim() || bus.operatorName || "SRS Travels",
+        busType: bus.bus_type?.trim() || bus.busType || "Standard AC",
+        departureTime: bus.dep_time || bus.departureTime || "--:--",
+        arrivalTime: bus.arr_time || bus.arrivalTime || "--:--",
+        duration: bus.duration || "--",
+        price: srsMinFare > 0 ? srsMinFare : extractValidPrice(bus),
+        availableSeats: bus.available_seats || bus.availableSeats || 0,
+        rating: "4.6",
+        apiProvider: "SRS",
+        originalData: bus,
+      };
+    });
+
+  try {
+    console.log("========== SRS V2 ==========");
+    console.log(sourceName, destName, date);
+
+    const searchSource = sourceName.toLowerCase();
+    const searchDest = destName.toLowerCase();
+
+    const fromLocation =
+      (cityMapping[searchSource] as any)?.apiName ?? sourceName;
+
+    const toLocation =
+      (cityMapping[searchDest] as any)?.apiName ?? destName;
+
+        const url =
+          `${BASE_URL}/api/busBooking/getSrsSchedulesV2/` +
+          `${searchSource}/` +
+          `${searchDest}/` +
+          `${date}/` +
+          `${fromLocation}/` +
+          `${toLocation}`;
+        console.log("Calling SRS V2 URL:", url);
+
+        const res = await fetch(url);
+        console.log("SRS V2 Status:", res.status);
+
+        if (res.ok) {
+          const result = await res.json();
+          console.log("SRS V2 Response:", result);
+          const data = Array.isArray(result) ? result : (result.data || result.result || result.schedules || result.buses || []);
+
+          if (data.length > 0) {
+            return mapData(data);
+          }
+        }
+
+    // If loop completes with no results
+    return [];
+
+  } catch (err) {
+    console.warn("SRS API V2 failed", err);
     return [];
   }
 };
@@ -644,84 +788,67 @@ export const fetchEzeeBusesV2 = async (
   destName: string,
   journeyDate: string
 ): Promise<NormalizedBus[]> => {
+  console.log("========== EZEE V2 ==========");
+  console.log(sourceName, destName, journeyDate);
+
+  const searchSource = sourceName.toLowerCase();
+  const searchDest = destName.toLowerCase();
+
+  const fromLocation =
+    (cityMapping[searchSource] as any)?.apiName ?? sourceName;
+
+  const toLocation =
+    (cityMapping[searchDest] as any)?.apiName ?? destName;
+
   try {
+        const url = `${BASE_URL}/api/bus/ezee/busList-v2/${encodeURIComponent(
+          searchSource
+        )}/${encodeURIComponent(destName)}/${encodeURIComponent(
+          journeyDate
+        )}/${encodeURIComponent(fromLocation)}/${encodeURIComponent(toLocation)}`;
 
-    const url = `${BASE_URL}/api/bus/ezee/busList-v2/${encodeURIComponent(
-      sourceName
-    )}/${encodeURIComponent(destName)}/${encodeURIComponent(
-      journeyDate
-    )}/${encodeURIComponent(sourceName)}/${encodeURIComponent(destName)}`;
-    console.log("Fetching Ezee V2 API:", url);
+        console.log("Calling Ezee V2 URL:", url);
 
-    const cached = getCachedData(url);
-    let data = cached;
-    
-    if (!data) {
-      const res = await fetch(url);
-    
-    if (!res.ok) {
-      console.warn(`[Ezee V2 Shield] API returned ${res.status}. UI is protected.`);
-      return [];
-    }
-      data = await res.json();
-      setCachedData(url, data, CACHE_TTL_BUS_LIST);
-    }
-    
-    // ✅ FIX: Robust array extraction
-    const rawData = data?.data?.buses || data?.buses || data?.data || data?.result || data;
-    const busArray = Array.isArray(rawData) ? rawData : [];
-    
-    return busArray.map((bus: any): NormalizedBus => {
-      const seatLayoutList = bus.seatLayoutList || bus.bus?.seatLayoutList || [];
-      
-      const calculatedAvailableSeats = seatLayoutList.filter(
-        (seat: any) => seat?.seatStatus?.code === "AL"
-      ).length;
+        const res = await fetch(url);
+        console.log("Ezee V2 Status:", res.status);
 
-      const availableSeaterCount = seatLayoutList.filter(
-        (seat: any) =>
-          seat.seatStatus?.code === "AL" &&
-          seat.busSeatType?.code === "SS"
-      ).length;
+        if (res.ok) {
+          const result = await res.json();
+          console.log("Ezee V2 Response:", result);
+          const rawData = result?.data?.buses || result?.buses || result?.data || result?.result || result;
+          const busArray = Array.isArray(rawData) ? rawData : [];
 
-      const availableSleeperCount = seatLayoutList.filter(
-        (seat: any) =>
-          seat.seatStatus?.code === "AL" &&
-          ["SL", "USL", "LSL", "WSL", "SUSL", "SLSL"].includes(seat.busSeatType?.code)
-      ).length;
+          if (busArray.length > 0) {
+            return busArray.map((bus: any): NormalizedBus => {
+              const seatLayoutList = bus.seatLayoutList || bus.bus?.seatLayoutList || [];
+              const calculatedAvailableSeats = seatLayoutList.filter((seat: any) => seat?.seatStatus?.code === "AL").length;
+              const availableSeaterCount = seatLayoutList.filter((seat: any) => seat.seatStatus?.code === "AL" && seat.busSeatType?.code === "SS").length;
+              const availableSleeperCount = seatLayoutList.filter((seat: any) => seat.seatStatus?.code === "AL" && ["SL", "USL", "LSL", "WSL", "SUSL", "SLSL"].includes(seat.busSeatType?.code)).length;
+              const departureTime = bus?.fromStation?.dateTime?.split(" ")[1]?.substring(0, 5) || bus.departureTime || bus.deptTime || bus.DepartureTime || "--:--";
+              const arrivalTime = bus?.toStation?.dateTime?.split(" ")[1]?.substring(0, 5) || bus.arrivalTime || bus.arrTime || bus.ArrivalTime || "--:--";
 
-      console.log("EZEE Available Seats", calculatedAvailableSeats);
-
-      const departureTime =
-        bus?.fromStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
-        bus.departureTime || bus.deptTime || bus.DepartureTime ||
-        "--:--";
-
-      const arrivalTime =
-        bus?.toStation?.dateTime?.split(" ")[1]?.substring(0, 5) ||
-        bus.arrivalTime || bus.arrTime || bus.ArrivalTime ||
-        "--:--";
-
-      return {
-        id: bus.tripCode || bus.TripCode || bus.id || Math.random().toString(),
-        apiProvider: "EZEE_V2",
-        operatorName: bus?.operator?.name || bus.operatorName || bus.travels || bus.TravelsName || "Ezee Travels",
-        busType: bus?.bus?.displayName || bus?.bus?.busType || bus.busType || bus.BusType || "A/C Sleeper",
-        departureTime,
-        arrivalTime,
-        duration: bus.duration || "---",
-        price: getMinimumAvailableFare(bus) || extractValidPrice(bus),
-        availableSeats: calculatedAvailableSeats > 0 ? calculatedAvailableSeats : parseInt(bus.availableSeats || bus.seatsAvailable || bus.AvailableSeats || "0", 10),
-        availableSeaterCount: availableSeaterCount > 0 ? availableSeaterCount : undefined,
-        availableSleeperCount: availableSleeperCount > 0 ? availableSleeperCount : undefined,
-        rating: bus.rating || "4.5",
-        originalData: bus 
-      };
-    });
+              return {
+                id: bus.tripCode || bus.TripCode || bus.id || Math.random().toString(),
+                apiProvider: "EZEE_V2",
+                operatorName: bus?.operator?.name || bus.operatorName || bus.travels || bus.TravelsName || "Ezee Travels",
+                busType: bus?.bus?.displayName || bus?.bus?.busType || bus.busType || bus.BusType || "A/C Sleeper",
+                departureTime,
+                arrivalTime,
+                duration: bus.duration || "---",
+                price: getMinimumAvailableFare(bus) || extractValidPrice(bus),
+                availableSeats: calculatedAvailableSeats > 0 ? calculatedAvailableSeats : parseInt(bus.availableSeats || bus.seatsAvailable || bus.AvailableSeats || "0", 10),
+                availableSeaterCount: availableSeaterCount > 0 ? availableSeaterCount : undefined,
+                availableSleeperCount: availableSleeperCount > 0 ? availableSleeperCount : undefined,
+                rating: bus.rating || "4.5",
+                originalData: bus
+              };
+            });
+          }
+        }
   } catch (error) {
     console.error("[Ezee V2 Error] Fetch failed, UI is shielded:", error);
-    return [];
   }
+  return [];
 };
 
 // ✅ EZEE V3 BUS LIST API
