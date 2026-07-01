@@ -32,9 +32,7 @@ const fullDecodeBusType = (raw: string): string => {
   return s.trim();
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LAYOUT META
-// ─────────────────────────────────────────────────────────────────────────────
+
 export const analyzeLayoutMeta = (deck: NormalizedSeat[], busTypeRaw?: string) => {
   const defaults = {
     hasPreSpacedRows: false,
@@ -140,9 +138,7 @@ const parseStages = (stageString: string | any[] | Record<string, any>) => {
   return [];
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: deep-search a nested object for boarding/dropping point arrays
-// ─────────────────────────────────────────────────────────────────────────────
+
 const findPointsArray = (obj: any, keywords: string[]): any => {
   if (!obj || typeof obj !== "object") return [];
   if (!Array.isArray(obj)) {
@@ -224,21 +220,6 @@ const extractEzeePointsSource = (
   return findPointsArray(rawData, directKeys.map(k => k.toLowerCase()));
 };
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ███████████████████  TRUST-BUT-VERIFY PIPELINE  ████████████████████████████
-// ═════════════════════════════════════════════════════════════════════════════
-
-/**
- * STEP 1 — Detect if the coordinate grid looks broken.
- *
- * Broken signals:
- *  • maxCol > 7          → columns clearly shifted/sparse (no bus has 8+ cols)
- *  • minCol < 0          → negative indices
- *  • uniqueCols > 7      → far too many distinct column values
- *  • row gap > 3         → large unexplained hole between consecutive rows
- *  • all seats same col  → API sent col=0 for everything (flat list bug)
- *  • occupancy < 40%     → grid is too sparse with ghost holes
- */
 const isBrokenLayout = (seats: NormalizedSeat[]): boolean => {
   if (!seats || seats.length < 2) return false;
 
@@ -279,13 +260,7 @@ const isBrokenLayout = (seats: NormalizedSeat[]): boolean => {
   return false;
 };
 
-/**
- * STEP 2a — Compress sparse column indices to a compact 0-based sequence.
- *
- * Example:  cols [0, 1, 5, 6]  →  [0, 1, 2, 3]
- * Preserves ONE aisle gap when a natural jump of > 1 exists between
- * consecutive column values, so the visual aisle still renders.
- */
+
 const compressColumns = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   const sortedUniqueCols = [...new Set(seats.map(s => s.col))].sort((a, b) => a - b);
 
@@ -407,12 +382,7 @@ const formatSriBalajiLayout = (seats: NormalizedSeat[], busType: string): Normal
   return [...formatDeck(lower), ...formatDeck(upper)];
 };
 
-/**
- * STEP 2b — Fix last-row gap for a single leftover seat.
- *
- * If the final row only contains one seat, move it down one row so
- * it does not become a broken floating tail row.
- */
+
 const fixLastRowGap = (seats: NormalizedSeat[], busType?: string): NormalizedSeat[] => {
   if (!seats || seats.length === 0) return seats;
 
@@ -438,15 +408,6 @@ const fixLastRowGap = (seats: NormalizedSeat[], busType?: string): NormalizedSea
   return seats;
 };
 
-/**
- * STEP 2c — Fallback full compact grid re-assignment.
- *
- * When column/row compression alone isn't enough (e.g. completely random
- * x/y values from a broken API), rebuild the grid from scratch:
- *  1. Group seats by their original row value.
- *  2. Within each row, sort by original col.
- *  3. Assign dense 0-based row & col indices.
- */
 const compactSeatGrid = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   const rowGroups = new Map<number, NormalizedSeat[]>();
   for (const seat of seats) {
@@ -472,13 +433,7 @@ const compactSeatGrid = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   return result;
 };
 
-/**
- * STEP 3 — Detect & fix upper/lower deck confusion.
- *
- * Some APIs set isUpper=false for all seats even on double-deckers.
- * When seat IDs clearly split into L/U or LB/UB groups but flags
- * are all false, re-derive from ID.
- */
+
 const fixUpperLowerMix = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   const hasUpperByFlag = seats.some(s => s.isUpper);
   const hasUpperById   = seats.some(s => /^(U|UB|USL|USU)\d+/i.test(s.id));
@@ -495,12 +450,6 @@ const fixUpperLowerMix = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   return seats;
 };
 
-/**
- * STEP 4 — Remove stray outlier seats far outside the main grid.
- *
- * A single seat at col=9 when every other seat is col 0–3 is a data error.
- * We remove seats whose col or row > median + safety margin.
- */
 const removeOutlierSeats = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   if (seats.length < 4) return seats;
 
@@ -539,8 +488,7 @@ export const fixBrokenSeatLayout = (
     return seats;
   }
 
-  // For EZEE, the API coordinates are trusted. Bypass all complex layout repair logic
-  // to prevent column compression and other destructive transformations that remove the aisle.
+
   if (provider === "EZEE_V2" || provider === "EZEE_V3") {
     console.log("[Layout] EZEE provider detected. Bypassing all layout repair logic.");
 
@@ -554,7 +502,7 @@ export const fixBrokenSeatLayout = (
       return seats.map((seat) => {
         const id = String(seat.id).toUpperCase();
 
-        // Lower deck restroom
+ 
         if (!seat.isUpper && id === "RT1") {
           return {
             ...seat,
@@ -666,9 +614,7 @@ export const fixBrokenSeatLayout = (
     }
   
 }
-// ─────────────────────────────────────────────
-// Fix: bottom floating seats
-// ─────────────────────────────────────────────
+
 const fixBottomMisalignedSeats = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   if (!seats || seats.length === 0) return seats;
 
@@ -688,9 +634,7 @@ const fixBottomMisalignedSeats = (seats: NormalizedSeat[]): NormalizedSeat[] => 
   return seats;
 };
 
-// ─────────────────────────────────────────────
-// STRICT FIX: ONLY for 2 seats → force [0,2]
-// ─────────────────────────────────────────────
+
 const fixLastRowTwoSeatLayout = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   if (!seats || seats.length === 0) return seats;
 
@@ -719,9 +663,7 @@ const fixLastRowTwoSeatLayout = (seats: NormalizedSeat[]): NormalizedSeat[] => {
   });
 };
 
-// ─────────────────────────────────────────────
-// MAIN CONDITION: Mixed sleeper + seater
-// ─────────────────────────────────────────────
+
 if (isMixedSleeperSeaterBus(busType)) {
   console.log(
     "[Layout] Mixed sleeper/seater detected — applying LIGHT repair",
@@ -740,16 +682,15 @@ if (isMixedSleeperSeaterBus(busType)) {
   const fixDeck = (deck: NormalizedSeat[]) => {
     let result = deck;
 
-    // Step 1
+ 
     result = compressColumns(result);
 
-    // Step 2
+   
     result = fixLastRowGap(result, busType);
 
-    // Step 3
+  
     result = fixBottomMisalignedSeats(result);
 
-    // ✅ ONLY affects 2-seat last rows
     result = fixLastRowTwoSeatLayout(result);
 
     return result;
@@ -821,9 +762,7 @@ if (is21SleeperBus(busType) && provider !== "EZEE_V2" && provider !== "EZEE_V3")
   return finalSeats;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GHOST SEAT FILTER + BUS TYPE RULES
-// ─────────────────────────────────────────────────────────────────────────────
+
 const applyBusTypeRules = (
   seats: NormalizedSeat[],
   busType: string,
@@ -959,9 +898,7 @@ export const fetchSeatLayoutData = async ({
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // EZEE API
-  // ═══════════════════════════════════════════════════════════════════════════
+
   if ((provider === "EZEE_V2" || provider === "EZEE_V3") && tripCode) {
     let cleanDoj = String(doj || "").trim();
     if (cleanDoj.includes("T")) cleanDoj = cleanDoj.split("T")[0];
@@ -1149,11 +1086,6 @@ export const fetchSeatLayoutData = async ({
         const seatName = String(seat.seatName || "").toUpperCase().trim();
         const ezeeSeatCode = String(seat.busSeatType?.code || "").trim().toUpperCase();
         const ezeeSeatName = String(seat.busSeatType?.name || "").trim().toUpperCase();
-
-        // For EZEE, the `busSeatType.code` is the single source of truth for seat type,
-        // based on the official EZEE documentation.
-        // Sleeper codes: SL, LSL, USL, SLSL, SUSL, WSL.
-        // Seater codes: ST, PB, SS, etc.
         const isSleeper =
           ["SL", "LSL", "USL", "SLSL", "SUSL", "WSL"].includes(ezeeSeatCode) ||
           /^L\d+|^U\d+|LB|UB|SB|SL|SU|DL|DU|USL|LSL|LOWER|UPPER|BERTH/i.test(seatName);
@@ -1174,8 +1106,7 @@ export const fetchSeatLayoutData = async ({
         } as NormalizedSeat;
       });
 
-      // For EZEE mixed layouts, if a row contains a sleeper, all seaters in that
-      // row must also reserve sleeper-height space to prevent visual collapse.
+    
       const rowsWithSleepers = new Set<number>();
       fetchedSeats.forEach(seat => {
         if (seat.isSleeper) rowsWithSleepers.add(seat.row);
@@ -1200,9 +1131,7 @@ export const fetchSeatLayoutData = async ({
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // VRL API
-  // ═══════════════════════════════════════════════════════════════════════════
+
   else if (provider === "VRL" && refNum) {
     const rawData = await fetchVrlSeatLayout(refNum);
     rawLayoutStorage = rawData;
@@ -1320,9 +1249,7 @@ export const fetchSeatLayoutData = async ({
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SRS API
-  // ═══════════════════════════════════════════════════════════════════════════
+
   else if (provider === "SRS" && scheduleId) {
     const rawData = await fetchSrsSeatLayout(scheduleId);
     rawLayoutStorage = rawData;

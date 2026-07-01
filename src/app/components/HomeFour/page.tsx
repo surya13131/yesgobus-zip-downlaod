@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image'; // Import Next.js Image component
+import Image from 'next/image'; 
 
 import qrImage from '../assest/Qr.png'; 
 import playStore from '../assest/playstore.png';
@@ -12,7 +12,6 @@ import styles from '../css/Home.module.css';
 import Footer from '../footer/page'; 
 import { FAQ_CONTENT, FAQItem } from '../content/content';
 
-// --- LOCAL TRANSLATIONS FOR APP BANNER & FAQ SECTION ---
 const translations: Record<string, any> = {
   EN: {
     bannerTitle1: "Best Buses, Best Deals.",

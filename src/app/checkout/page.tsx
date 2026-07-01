@@ -224,7 +224,12 @@ function CheckoutContent() {
 
             if (verifyData.success || verifyData.status === 200 || verifyData.status === 'success') {
               sessionStorage.setItem(`payment_success_${currentBookingId}`, "true");
-              setTicketData((prev: any) => ({ ...prev, bookingStatus: 'paid', status: 'paid' }));
+              setTicketData((prev: any) => ({ 
+                ...prev, 
+                bookingStatus: 'paid', 
+                status: 'paid',
+                paymentId: response.razorpay_payment_id 
+              }));
               await fetchFinalTicket(currentBookingId as string); 
               setStatus('success');
             } else {
@@ -440,6 +445,29 @@ function CheckoutContent() {
 
       if (res.ok || data.success === true || data.status === 0 || data.status === 200 || !!data.result) {
         
+        console.log("Payment ID:", ticketData?.paymentId);
+
+      
+        const refundRes = await fetch(`${BASE_URL}/api/payment/v2/refund-v2`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentId: ticketData?.paymentId, 
+            type: "instant",
+            amount: Number(cancelPreview.refundAmount),
+          }),
+        });
+
+        const refundData = await refundRes.json();
+        console.log("Refund Response:", refundData);
+
+        if (!refundRes.ok || refundData.success === false) {
+          alert(refundData.message || "Refund failed. Please contact support.");
+          setIsProcessingCancel(false); 
+          return;
+        }
         try {
           await fetch(`${BASE_URL}/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
             method: 'PATCH',

@@ -4,8 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BASE_URL } from "../components/api";
 
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface Booking {
   id?: string;
   _id?: string; 
@@ -40,22 +38,27 @@ interface CancelPreview {
   seatNumbers?: string; 
 }
 
-// ─── Empty State ─────────────────────────────────────────────────────────────
+
 const EmptyState = ({ onRefresh, refreshing }: { onRefresh: () => void; refreshing: boolean }) => (
-  <div className="d-flex flex-column align-items-center justify-content-center py-5 w-100" style={{ minHeight: "60vh", backgroundColor: "#fff" }}>
-    <p style={{ fontSize: "18px", fontFamily: "Georgia, serif", color: "#6c757d", marginBottom: "20px" }}>
+  <div className="d-flex flex-column align-items-center justify-content-center py-5 w-100 rounded-4 shadow-sm mx-auto" style={{ minHeight: "50vh", maxWidth: "600px", backgroundColor: "#fff", border: "1px solid #eaeaea" }}>
+    <div className="mb-3" style={{ background: "#f8f9fa", padding: "20px", borderRadius: "50%" }}>
+      <i className="bi bi-journal-x" style={{ fontSize: "40px", color: "#adb5bd" }}></i>
+    </div>
+    <p style={{ fontSize: "16px", fontWeight: "500", color: "#6c757d", marginBottom: "20px" }}>
       No bookings found.
     </p>
     <button
       onClick={onRefresh}
-      className="btn d-inline-flex align-items-center gap-2 px-4 py-2"
+      className="btn d-inline-flex align-items-center gap-2 px-4 py-2 custom-hover-btn"
       style={{
         backgroundColor: "#0D2B4C",
         color: "#fff",
         borderRadius: "50px",
-        fontSize: "15px",
+        fontSize: "14px",
+        fontWeight: "500",
         border: "none",
-        boxShadow: "0px 4px 10px rgba(0,0,0,0.1)"
+        boxShadow: "0px 4px 12px rgba(13, 43, 76, 0.2)",
+        transition: "all 0.3s ease"
       }}
     >
       <i className={`bi bi-arrow-clockwise ${refreshing ? "spin-icon" : ""}`}></i>
@@ -64,7 +67,6 @@ const EmptyState = ({ onRefresh, refreshing }: { onRefresh: () => void; refreshi
   </div>
 );
 
-// ─── Booking Card (Full Width & Responsive) ──────────────────────────────────
 const BookingCard = ({
   booking,
   onClick
@@ -74,58 +76,77 @@ const BookingCard = ({
 }) => {
   return (
     <div
-      className="card border-0 shadow-sm mb-3 booking-card w-100"
+      className="card border-0 mb-3 booking-card w-100"
       onClick={() => onClick(booking)}
       style={{
-        borderRadius: "12px",
-        backgroundColor: "#f8f9fa",
+        borderRadius: "16px",
+        backgroundColor: "#ffffff",
         cursor: "pointer",
-        padding: "20px 24px",
-        border: "1px solid #e9ecef",
-        transition: "transform 0.2s, box-shadow 0.2s"
+        border: "1px solid #edf2f7",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        transition: "all 0.3s ease"
       }}
     >
-      <div className="d-flex align-items-center justify-content-between w-100 flex-wrap gap-3">
-        <div className="d-flex flex-row align-items-start gap-4 flex-grow-1">
-          <div className="mt-1 d-none d-sm-block">
-            <i className="bi bi-bus-front" style={{ color: "#0D2B4C", fontSize: "28px" }}></i>
-          </div>
-          <div className="flex-grow-1">
-            <h5 className="mb-1 d-flex flex-wrap align-items-center gap-2" style={{ color: "#0D2B4C", fontWeight: "700", fontSize: "20px" }}>
-              <span>{booking.from || (booking as any).sourceCity}</span> 
-              <i className="bi bi-arrow-right" style={{ fontSize: "16px", color: "#6c757d" }}></i> 
-              <span>{booking.to || (booking as any).destinationCity}</span>
-            </h5>
-            <div className="d-flex flex-wrap gap-4 mt-2" style={{ fontSize: "15px", color: "#495057" }}>
-              <div><strong>Date:</strong> {booking.departureDate || (booking as any).doj?.split('T')}</div>
-              <div>
-                {booking.departureTime || (booking as any).pickUpTime} <i className="bi bi-arrow-right mx-1" style={{ fontSize: "12px", color: "#6c757d" }}></i> {booking.arrivalTime || (booking as any).reachTime}
+      <div className="card-body p-3 p-md-4">
+        <div className="d-flex align-items-center justify-content-between w-100 flex-wrap gap-3">
+          <div className="d-flex flex-row align-items-start gap-3 gap-md-4 flex-grow-1">
+            <div className="mt-1 d-none d-sm-flex align-items-center justify-content-center flex-shrink-0" style={{ width: "50px", height: "50px", backgroundColor: "#f0f4f8", borderRadius: "50%" }}>
+              <i className="bi bi-bus-front" style={{ color: "#0D2B4C", fontSize: "22px" }}></i>
+            </div>
+            <div className="flex-grow-1">
+              <h5 className="mb-2 d-flex flex-wrap align-items-center gap-2" style={{ color: "#0D2B4C", fontWeight: "700", fontSize: "18px" }}>
+                <span>{booking.from || (booking as any).sourceCity}</span> 
+                <div className="d-flex align-items-center justify-content-center mx-1 flex-shrink-0" style={{ width: "22px", height: "22px", backgroundColor: "#f8f9fa", borderRadius: "50%" }}>
+                  <i className="bi bi-arrow-right" style={{ fontSize: "12px", color: "#6c757d" }}></i>
+                </div>
+                <span>{booking.to || (booking as any).destinationCity}</span>
+              </h5>
+              <div className="d-flex flex-wrap gap-3 mt-2" style={{ fontSize: "13px", color: "#495057", fontWeight: "500" }}>
+                <div className="d-flex align-items-center gap-1">
+                  <i className="bi bi-calendar3 text-muted"></i> 
+                  {booking.departureDate || (booking as any).doj?.split('T')}
+                </div>
+                <div className="d-flex align-items-center gap-1">
+                  <i className="bi bi-clock text-muted"></i>
+                  {booking.departureTime || (booking as any).pickUpTime} 
+                  <i className="bi bi-arrow-right mx-1" style={{ fontSize: "10px", color: "#adb5bd" }}></i> 
+                  {booking.arrivalTime || (booking as any).reachTime}
+                </div>
+              </div>
+              <div className="mt-3 d-flex align-items-center flex-wrap gap-2" style={{ fontSize: "13px", color: "#6c757d", fontWeight: "500" }}>
+                <i className="bi bi-building"></i>
+                <span className="text-truncate" style={{ maxWidth: "200px" }}>{booking.operatorName || (booking as any).busOperator}</span> 
+                <span className="badge rounded-pill flex-shrink-0" style={{ backgroundColor: "#e2e8f0", color: "#475569", fontSize: "10px", fontWeight: "600", letterSpacing: "0.5px" }}>
+                  {booking.apiProvider || ((booking as any).isVrl ? "VRL" : (booking as any).isSrs ? "SRS" : "EZEE")}
+                </span>
               </div>
             </div>
-            <div className="mt-2" style={{ fontSize: "14px", color: "#6c757d" }}>
-              {booking.operatorName || (booking as any).busOperator} 
-              <span className="badge bg-secondary ms-2" style={{ fontSize: "10px" }}>
-                {booking.apiProvider || ((booking as any).isVrl ? "VRL" : (booking as any).isSrs ? "SRS" : "EZEE")}
+          </div>
+          <div className="d-flex flex-column align-items-end justify-content-center mt-2 mt-sm-0 w-100 w-sm-auto">
+            <div className="d-flex align-items-center justify-content-between w-100 w-sm-auto mb-2 gap-3">
+              <span 
+                className="badge rounded-pill px-3 py-2 shadow-sm" 
+                style={{ 
+                  backgroundColor: (booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') ? '#fee2e2' : '#dcfce7',
+                  color: (booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') ? '#dc2626' : '#16a34a',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  letterSpacing: "0.5px"
+                }}
+              >
+                <i className={`bi ${(booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') ? 'bi-x-circle-fill' : 'bi-check-circle-fill'} me-1`}></i>
+                {(booking.status || (booking as any).bookingStatus || 'UPCOMING').toUpperCase()}
               </span>
             </div>
-          </div>
-        </div>
-        <div className="d-flex flex-column align-items-end">
-          <span 
-            className="badge mb-2" 
-            style={{ 
-              backgroundColor: (booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') ? '#dc3545' : '#198754',
-              fontSize: '12px'
-            }}
-          >
-            {(booking.status || (booking as any).bookingStatus || 'UPCOMING').toUpperCase()}
-          </span>
-          {(booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') && (booking as any).totalRefundAmount > 0 &&
-            <div className="text-success" style={{ fontSize: '13px', fontWeight: '500' }}>
-              Refund: ₹{(booking as any).totalRefundAmount}
+            {(booking.status?.toLowerCase() === 'cancelled' || (booking as any).bookingStatus?.toLowerCase() === 'cancelled') && (booking as any).totalRefundAmount > 0 &&
+              <div className="text-success mt-1 mb-2 text-end w-100" style={{ fontSize: '12px', fontWeight: '600' }}>
+                Refund: ₹{(booking as any).totalRefundAmount}
+              </div>
+            }
+            <div className="text-primary view-details-text text-end w-100" style={{ fontSize: "13px", fontWeight: "600" }}>
+              View Details <i className="bi bi-chevron-right fs-6 align-middle"></i>
             </div>
-          }
-          <i className="bi bi-chevron-right text-secondary fs-4"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -145,8 +166,6 @@ const TicketModal = ({
   isProcessing: boolean
 }) => {
   const router = useRouter();
-  const [refundData, setRefundData] = useState<{ status: string; amount: number; refundId?: string } | null>(null);
-  const [isFetchingRefund, setIsFetchingRefund] = useState(false);
 
   if (!booking) return null;
 
@@ -154,7 +173,7 @@ const TicketModal = ({
   const isCancelled = currentStatus === 'cancelled' || currentStatus === 'cancel';
   const bookingId = booking.id || booking._id || "";
 
-  // Helper to cleanly extract seat numbers for display
+
   let displaySeats = "---";
   const rawSeats = booking.seatNumbers || (booking as any).selectedSeats || (booking as any).seats || [];
   if (typeof rawSeats === 'string') {
@@ -163,31 +182,8 @@ const TicketModal = ({
     displaySeats = rawSeats.map((p: any) => typeof p === 'string' ? p : (p?.seatName || p?.seatCode)).filter(Boolean).join(", ");
   }
 
-  const handleCheckRefund = async () => {
-    setIsFetchingRefund(true);
-    try {
-      const res = await fetch(`${BASE_URL}/api/busBooking/refundStatus/${bookingId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const finalData = data.data || data; 
-        setRefundData({
-          status: finalData.status || 'Processing',
-          amount: finalData.amount || finalData.refundAmount || 0,
-          refundId: finalData.refundId || 'N/A'
-        });
-      } else {
-        alert("Refund data not available yet.");
-      }
-    } catch (error) {
-      console.error("Refund Fetch Error:", error);
-      alert("Error fetching refund status.");
-    } finally {
-      setIsFetchingRefund(false);
-    }
-  };
-
   const handleViewTicket = () => {
-    // Ensure standard formatting before sending to CheckoutPage
+  
     const normalizedBookingData = {
         ...booking,
         status: isCancelled ? 'CANCELLED' : 'paid',
@@ -220,99 +216,111 @@ const TicketModal = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="custom-modal slide-up" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay p-2 p-md-4" onClick={onClose}>
+      <div className="custom-modal slide-up p-3 p-md-4" onClick={(e) => e.stopPropagation()}>
         
         {/* Header & Close Button */}
-        <div className="d-flex justify-content-between align-items-start mb-3">
-          <div className="flex-grow-1 text-center mt-2">
-            <h3 className="modal-route-title" style={{ color: "#0D2B4C", fontWeight: "bold", marginBottom: "8px" }}>
-              {booking.from || (booking as any).sourceCity} <span className="mx-2" style={{ fontSize: "20px", verticalAlign: "middle", color: "#6c757d" }}>→</span> {booking.to || (booking as any).destinationCity}
+        <div className="d-flex justify-content-between align-items-start mb-2">
+          <div className="flex-grow-1 text-center mt-1">
+            <h3 className="modal-route-title d-flex align-items-center justify-content-center flex-wrap gap-2" style={{ color: "#0D2B4C", fontWeight: "800", marginBottom: "6px" }}>
+              <span>{booking.from || (booking as any).sourceCity}</span>
+              <div className="d-flex align-items-center justify-content-center bg-light rounded-circle flex-shrink-0" style={{ width: "26px", height: "26px" }}>
+                <i className="bi bi-arrow-right text-muted" style={{ fontSize: "14px" }}></i>
+              </div>
+              <span>{booking.to || (booking as any).destinationCity}</span>
             </h3>
-            <h5 style={{ color: "#0D2B4C", fontWeight: "bold", margin: 0 }}>
-              {booking.departureDate || (booking as any).doj?.split('T')}
-            </h5>
+            <div className="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill" style={{ backgroundColor: "#f0f4f8", color: "#0D2B4C", fontWeight: "600", fontSize: "13px" }}>
+              <i className="bi bi-calendar-event"></i>
+              {booking.departureDate || (booking as any).doj?.split('T')[0]}
+            </div>
           </div>
-          <i className="bi bi-x-circle text-secondary fs-4" style={{ cursor: "pointer" }} onClick={onClose}></i>
+          <button className="btn btn-sm btn-light rounded-circle shadow-sm flex-shrink-0 ms-2" style={{ width: "32px", height: "32px", padding: 0 }} onClick={onClose}>
+            <i className="bi bi-x-lg text-secondary"></i>
+          </button>
         </div>
         
-        <hr style={{ borderColor: "#dee2e6", margin: "20px 0" }} />
+        <hr style={{ borderColor: "#edf2f7", margin: "16px 0", borderTopWidth: "2px" }} />
 
         {/* Body */}
-        <div className="text-center mb-4" style={{ fontSize: "16px", color: "#212529" }}>
-          <div className="mb-3 fs-5 fw-medium">
-            {booking.departureTime || (booking as any).pickUpTime} <span style={{ fontSize: "14px", margin: "0 8px", color: "#6c757d" }}>→</span> {booking.arrivalTime || (booking as any).reachTime}
+        <div className="text-center mb-3" style={{ color: "#334155" }}>
+          <div className="d-flex justify-content-center align-items-center gap-2 gap-md-3 mb-2 fw-bold fs-6 fs-md-5">
+            <span>{booking.departureTime || (booking as any).pickUpTime}</span>
+            <span style={{ fontSize: "10px", color: "#94a3b8" }}>──────</span>
+            <i className="bi bi-clock-history" style={{ color: "#00AEEF" }}></i>
+            <span style={{ fontSize: "10px", color: "#94a3b8" }}>──────</span>
+            <span>{booking.arrivalTime || (booking as any).reachTime}</span>
           </div>
-          <div className="mb-2 fs-5">{booking.operatorName || (booking as any).busOperator}</div>
-          <div className="mb-2 text-muted" style={{ fontSize: '14px' }}>{booking.busType}</div>
           
-          <div className="mt-4 p-3 bg-light rounded text-start" style={{ border: "1px dashed #ccc" }}>
-            <div className="row g-3">
-              <div className="col-6 col-md-3"><strong>PNR:</strong><br/>{booking.pnr || booking.blockKey || (booking as any).pnrNumber}</div>
-              <div className="col-6 col-md-3">
-                <strong>Seats:</strong><br/>
+          <div className="mb-1 fs-6 fw-bold text-break" style={{ color: "#0D2B4C" }}>{booking.operatorName || (booking as any).busOperator}</div>
+          <div className="mb-3 text-muted" style={{ fontSize: '12px', fontWeight: "500" }}>{booking.busType}</div>
+          
+          {/* COMPACT DEVICE-RESPONSIVE CARD FOR PNR, SEATS, PASSENGER */}
+          <div className="mt-3 p-3 rounded-4 text-start shadow-sm" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            
+            {/* PNR Row */}
+            <div className="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center border-bottom pb-2 mb-2" style={{ borderColor: "#edf2f7" }}>
+              <div className="text-muted mb-1 mb-sm-0" style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>PNR / Ticket No</div>
+              <div className="fw-bold text-break text-sm-end" style={{ color: "#1e293b", fontSize: "14px", wordBreak: "break-all" }}>
+                {booking.pnr || booking.blockKey || (booking as any).pnrNumber}
+              </div>
+            </div>
+            
+            {/* Seats Row */}
+            <div className="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center border-bottom pb-2 mb-2" style={{ borderColor: "#edf2f7" }}>
+              <div className="text-muted mb-1 mb-sm-0" style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Seats</div>
+              <div className="fw-bold text-break text-sm-end" style={{ color: "#1e293b", fontSize: "14px", wordBreak: "break-word", maxWidth: "100%" }}>
                 {displaySeats}
               </div>
-              <div className="col-6 col-md-3"><strong>Passenger:</strong><br/>{booking.passengerName || (booking as any).customerName}</div>
-              <div className="col-6 col-md-3">
-                <strong>Status:</strong><br/>
-                <span className="badge" style={{ backgroundColor: isCancelled ? '#dc3545' : '#198754' }}>
+            </div>
+            
+            {/* Passenger Row */}
+            <div className="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center border-bottom pb-2 mb-2" style={{ borderColor: "#edf2f7" }}>
+              <div className="text-muted mb-1 mb-sm-0" style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Passenger</div>
+              <div className="fw-bold text-break text-sm-end" style={{ color: "#1e293b", fontSize: "14px", wordBreak: "break-word" }}>
+                {booking.passengerName || (booking as any).customerName}
+              </div>
+            </div>
+            
+            {/* Status Row */}
+            <div className="d-flex flex-column flex-sm-row justify-content-sm-between align-items-sm-center pt-1">
+              <div className="text-muted mb-2 mb-sm-0" style={{ fontSize: "11px", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.5px" }}>Status</div>
+              <div className="text-sm-end">
+                <span className="badge rounded-pill px-3 py-1" style={{ backgroundColor: isCancelled ? '#fee2e2' : '#dcfce7', color: isCancelled ? '#dc2626' : '#16a34a', fontWeight: "700", fontSize: "11px" }}>
                   {isCancelled ? 'CANCELLED' : 'CONFIRMED'}
                 </span>
               </div>
             </div>
+
           </div>
 
-          {/* Inline Refund Display */}
-          {refundData && isCancelled && (
-             <div className="mt-3 p-3 rounded text-start" style={{ backgroundColor: '#e8f5e9', border: '1px solid #c8e6c9' }}>
-               <h6 className="fw-bold mb-2 text-success"><i className="bi bi-info-circle me-2"></i>Refund Information</h6>
-               <div className="d-flex justify-content-between mb-1" style={{ fontSize: '14px' }}>
-                 <span>Status:</span> <strong>{refundData.status.toUpperCase()}</strong>
-               </div>
-               <div className="d-flex justify-content-between" style={{ fontSize: '14px' }}>
-                 <span>Amount:</span> <strong>₹{refundData.amount}</strong>
-               </div>
-             </div>
-          )}
         </div>
 
         {/* Action Buttons */}
-        <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-4">
+        <div className="d-flex flex-column flex-sm-row gap-2 gap-md-3 justify-content-center mt-3">
           <button 
-            className="btn py-2 flex-grow-1" 
+            className="btn py-2 py-md-3 flex-grow-1 custom-hover-btn" 
             onClick={handleViewTicket}
-            style={{ backgroundColor: "#0D2B4C", color: "#fff", borderRadius: "8px", fontSize: "16px", fontWeight: "600" }}
+            style={{ backgroundColor: "#0D2B4C", color: "#fff", borderRadius: "12px", fontSize: "14px", fontWeight: "600", boxShadow: "0 4px 12px rgba(13, 43, 76, 0.15)", border: "none" }}
           >
             <i className="bi bi-ticket-detailed me-2"></i> View Ticket
           </button>
 
-          {!isCancelled ? (
-             <button 
-               className="btn py-2 flex-grow-1" 
-               onClick={() => onInitiateCancel(booking)} 
-               disabled={isProcessing}
-               style={{ backgroundColor: "#dc3545", color: "#fff", borderRadius: "8px", fontSize: "16px", fontWeight: "600", border: "none" }}
-             >
-               {isProcessing ? <span className="spinner-border spinner-border-sm"></span> : "Cancel Ticket"}
-             </button>
-          ) : (
-            <button 
-              className="btn py-2 flex-grow-1" 
-              onClick={handleCheckRefund}
-              disabled={isFetchingRefund}
-              style={{ backgroundColor: "#4CAF50", color: "#fff", borderRadius: "8px", fontSize: "16px", fontWeight: "600", border: "none" }}
+          {!isCancelled &&
+            <button
+              className="btn py-2 py-md-3 flex-grow-1 custom-danger-btn"
+              onClick={() => onInitiateCancel(booking)}
+              disabled={isProcessing}
+              style={{ backgroundColor: "#fff", color: "#ef4444", borderRadius: "12px", fontSize: "14px", fontWeight: "600", border: "2px solid #fee2e2", transition: "all 0.2s ease" }}
             >
-              {isFetchingRefund ? <span className="spinner-border spinner-border-sm"></span> : "Check Refund Status"}
-            </button>
-          )}
+              {isProcessing ? <span className="spinner-border spinner-border-sm"></span> : <><i className="bi bi-x-circle me-2"></i> Cancel Ticket</>}
+            </button>}
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function MyBookingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"Upcoming" | "Completed" | "Cancelled">("Upcoming");
@@ -342,18 +350,13 @@ export default function MyBookingsPage() {
     setRefreshing(true);
     setLoading(true);
     try {
-      // ✅ FIX: Exact logic mapping from CheckoutPage ensuring test users see their data
       console.log("=== MY BOOKINGS ===");
       
       const userStr = localStorage.getItem('yesgo_user');
-      console.log("Local Storage:", userStr);
-
       const user = userStr ? JSON.parse(userStr) : null;
       const userId = user?._id || user?.id;
-      console.log("User ID:", userId);
 
       if (!userId || userId.length < 10) {
-        console.warn("No valid user ID found, cannot fetch bookings.");
         setBookings([]);
         setLoading(false);
         setRefreshing(false);
@@ -361,12 +364,10 @@ export default function MyBookingsPage() {
       }
       
       const url = `${BASE_URL}/api/busBooking/getAllBookings/${userId}`;
-      console.log("API URL:", url);
       const res = await fetch(url, { method: "GET", headers: { "Content-Type": "application/json" } });
 
       if (res.ok) {
         const data = await res.json();
-        console.log("API Response:", data);
         // Sort bookings: newest first
         const sortedBookings = (data.data || data.bookings || []).sort((a: any, b: any) => {
            return new Date(b.doj || b.departureDate).getTime() - new Date(a.doj || a.departureDate).getTime();
@@ -374,7 +375,6 @@ export default function MyBookingsPage() {
         setBookings(sortedBookings);
       } else {
         setBookings([]);
-        console.error("API Response not OK:", res.status, await res.text());
       }
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -492,7 +492,7 @@ export default function MyBookingsPage() {
         if (provider === "VRL") {
           const vrlList = Array.isArray(data) ? data : (Array.isArray(rawData.data) ? rawData.data : []);
           if (vrlList.length > 0) {
-            const vrlData = vrlList || vrlList; // handle array wrapper
+            const vrlData = vrlList || vrlList; 
             extRef = vrlData.RefundAmount ?? extRef;
             
             const calculatedCca = (vrlData.TotalFare !== undefined && vrlData.RefundAmount !== undefined) 
@@ -522,7 +522,7 @@ export default function MyBookingsPage() {
           blockKey: finalBlockKey.toString(),
           seatNumbers: seatsStr
         });
-        setSelectedBooking(null); // Close the detail modal
+        setSelectedBooking(null); 
       } else {
         alert(data.message || "❌ This ticket cannot be cancelled. It may be past departure time or non-refundable.");
       }
@@ -587,6 +587,24 @@ export default function MyBookingsPage() {
       if (isSuccess) {
         const targetBooking = bookings.find(b => (b.id || b._id) === cancelPreview.bookingId);
         
+        const refundRes = await fetch(`${BASE_URL}/api/payment/v2/refund-v2`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentId: (targetBooking as any)?.paymentId,
+            type: "instant",
+            amount: Number(cancelPreview.refundAmount),
+          }),
+        });
+
+        const refundData = await refundRes.json();
+
+        if (!refundRes.ok || refundData.success === false) {
+          alert(refundData.message || "Ticket cancelled with provider, but refund failed. Please contact support.");
+          return;
+        }
         // --- LOCAL DB UPDATE ---
         try {
           await fetch(`${BASE_URL}/api/busBooking/updateBooking/${cancelPreview.bookingId}`, {
@@ -654,43 +672,51 @@ export default function MyBookingsPage() {
   const TABS = ["Upcoming", "Completed", "Cancelled"] as const;
 
   return (
-    <div className="bus-page-container w-100" style={{ minHeight: "100vh", backgroundColor: "#f4f7f6" }}>
+    <div className="bus-page-container w-100" style={{ minHeight: "100vh", backgroundColor: "#f8fafc" }}>
       
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin-icon { animation: spin 0.8s linear infinite; display: inline-block; }
         
-        .booking-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(13,43,76,0.08) !important; border-color: #00AEEF !important; }
+        .booking-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(13,43,76,0.06) !important; border-color: #00AEEF !important; }
+        .booking-card:hover .view-details-text { color: #00AEEF !important; }
 
-        .tab-btn { background: transparent; border: none; padding: 16px 0; font-weight: 500; font-size: 16px; color: #adb5bd; border-bottom: 3px solid transparent; transition: all 0.2s; flex: 1; text-align: center; }
+        .tab-btn { background: transparent; border: none; padding: 14px 0; font-weight: 600; font-size: 14px; color: #94a3b8; border-bottom: 3px solid transparent; transition: all 0.2s ease-in-out; flex: 1; text-align: center; }
+        .tab-btn:hover { color: #475569; }
         .tab-btn.active { color: #00AEEF; border-bottom-color: #00AEEF; font-weight: 700; }
         
         /* Modal Styles - Responsive */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px; backdrop-filter: blur(4px); }
-        .custom-modal { background: #fff; width: 100%; max-width: 650px; border-radius: 16px; padding: 32px; box-shadow: 0 15px 50px rgba(0,0,0,0.3); }
-        .modal-route-title { font-size: 28px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1050; backdrop-filter: blur(5px); overflow-y: auto; }
+        .custom-modal { background: #fff; width: 100%; max-width: 550px; border-radius: 16px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); margin: auto; }
+        .modal-route-title { font-size: 20px; }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        @media (max-width: 768px) {
-          .custom-modal { max-width: 100%; padding: 24px; border-radius: 20px; }
-          .modal-route-title { font-size: 20px !important; }
+        .custom-hover-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .custom-danger-btn:hover { background-color: #fee2e2 !important; }
+
+        @media (min-width: 768px) {
+          .tab-btn { padding: 18px 0; font-size: 15px; }
+          .modal-route-title { font-size: 24px; }
+          .w-sm-auto { width: auto !important; }
         }
 
-        .header-bg { background-color: #0D2B4C; color: white; padding: 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%; }
+        .header-bg { background: linear-gradient(90deg, #0D2B4C 0%, #154378 100%); color: white; padding: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; }
       `}</style>
 
       {/* ══ HEADER (Full Width) ══ */}
       <div className="header-bg sticky-top">
-        <div className="container-fluid d-flex align-items-center px-4">
-          <i className="bi bi-arrow-left fs-4 me-3" style={{ cursor: "pointer" }} onClick={() => router.push('/')}></i>
-          <h5 className="mb-0 fw-normal" style={{ fontSize: "22px", letterSpacing: "0.5px" }}>My Bookings</h5>
+        <div className="container-fluid d-flex align-items-center px-3 px-md-4">
+          <div className="d-flex align-items-center justify-content-center me-3 rounded-circle text-white flex-shrink-0" style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.15)', cursor: "pointer", transition: '0.2s' }} onClick={() => router.push('/')}>
+            <i className="bi bi-arrow-left fs-5"></i>
+          </div>
+          <h5 className="mb-0 fw-semibold text-truncate" style={{ fontSize: "18px", letterSpacing: "0.3px" }}>My Bookings</h5>
         </div>
       </div>
 
       {/* ── Tabs (Full Width) ── */}
-      <div className="bg-white sticky-top shadow-sm" style={{ top: "66px", zIndex: 1000 }}>
+      <div className="bg-white sticky-top shadow-sm" style={{ top: "68px", zIndex: 1000 }}>
         <div className="container-fluid d-flex px-0">
           {TABS.map((tab) => (
             <button
@@ -705,16 +731,17 @@ export default function MyBookingsPage() {
       </div>
 
       {/* ── Main Content Area ── */}
-      <div className="container-fluid py-4 px-3 px-md-5">
+      <div className="container-fluid py-3 py-md-4 px-2 px-sm-3 px-md-5">
         {loading ? (
           <div className="text-center py-5 mt-5">
-            <div className="spinner-border" style={{ color: "#0D2B4C", width: "3rem", height: "3rem" }}></div>
+            <div className="spinner-border" style={{ color: "#00AEEF", width: "2.5rem", height: "2.5rem", borderWidth: "0.2em" }}></div>
+            <div className="mt-3 text-muted fw-medium fs-6">Loading your bookings...</div>
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState onRefresh={fetchBookings} refreshing={refreshing} />
         ) : (
-          <div className="row justify-content-center">
-            <div className="col-12 col-xxl-10">
+          <div className="row justify-content-center mx-0">
+            <div className="col-12 col-lg-10 col-xl-8 px-0 px-sm-2">
               {filtered.map((booking) => (
                 <BookingCard 
                   key={booking.id || booking._id} 
@@ -737,29 +764,31 @@ export default function MyBookingsPage() {
 
       {/* Cancel Confirmation Modal */}
       {cancelPreview && (
-        <div className="modal-overlay" style={{ zIndex: 1060 }}>
-          <div className="custom-modal slide-up text-center p-4">
-            <i className="bi bi-exclamation-triangle text-warning" style={{ fontSize: "48px" }}></i>
-            <h4 className="mt-3 fw-bold text-dark">Confirm Cancellation</h4>
-            <p className="text-muted mt-2">Are you sure you want to cancel this ticket?</p>
+        <div className="modal-overlay p-3" style={{ zIndex: 1060 }}>
+          <div className="custom-modal slide-up text-center p-4" style={{ maxWidth: "450px" }}>
+            <div className="d-flex justify-content-center align-items-center mb-3 mx-auto" style={{ width: "60px", height: "60px", backgroundColor: "#fee2e2", borderRadius: "50%" }}>
+              <i className="bi bi-exclamation-triangle text-danger" style={{ fontSize: "30px" }}></i>
+            </div>
+            <h5 className="mt-2 fw-bold" style={{ color: "#1e293b" }}>Confirm Cancellation</h5>
+            <p className="text-muted mt-2 px-1" style={{ fontSize: "14px" }}>Are you sure you want to cancel this ticket? This action cannot be undone.</p>
             
-            <div className="bg-light p-3 rounded mb-4 mt-3 border text-start">
-              <div className="d-flex justify-content-between mb-2">
-                <span>Cancellation Charges:</span>
-                <strong>₹{cancelPreview.cca}</strong>
+            <div className="p-3 rounded-4 mb-4 mt-3 text-start shadow-sm" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div className="d-flex justify-content-between mb-2 align-items-center border-bottom pb-2 border-light">
+                <span className="text-muted fw-semibold" style={{ fontSize: "13px" }}>Cancellation Charges</span>
+                <strong className="fs-6" style={{ color: "#1e293b" }}>₹{cancelPreview.cca}</strong>
               </div>
-              <div className="d-flex justify-content-between text-success">
-                <span>Estimated Refund:</span>
-                <strong>₹{cancelPreview.refundAmount}</strong>
+              <div className="d-flex justify-content-between align-items-center pt-1">
+                <span className="text-success fw-bold" style={{ fontSize: "14px" }}>Estimated Refund</span>
+                <strong className="fs-5 text-success">₹{cancelPreview.refundAmount}</strong>
               </div>
             </div>
 
-            <div className="d-flex gap-3">
-              <button className="btn btn-outline-secondary flex-grow-1" onClick={() => setCancelPreview(null)} disabled={isProcessing}>
+            <div className="d-flex flex-column flex-sm-row gap-2 gap-sm-3">
+              <button className="btn py-2 py-sm-3 fw-bold flex-grow-1 text-muted" style={{ backgroundColor: "#f1f5f9", borderRadius: "10px", border: "none", fontSize: "14px" }} onClick={() => setCancelPreview(null)} disabled={isProcessing}>
                 Keep Ticket
               </button>
-              <button className="btn btn-danger flex-grow-1" onClick={handleConfirmCancel} disabled={isProcessing}>
-                {isProcessing ? "Cancelling..." : "Confirm Cancel"}
+              <button className="btn btn-danger py-2 py-sm-3 fw-bold flex-grow-1" style={{ borderRadius: "10px", boxShadow: "0 4px 12px rgba(220, 38, 38, 0.25)", fontSize: "14px" }} onClick={handleConfirmCancel} disabled={isProcessing}>
+                {isProcessing ? <span className="spinner-border spinner-border-sm"></span> : "Confirm Cancel"}
               </button>
             </div>
           </div>

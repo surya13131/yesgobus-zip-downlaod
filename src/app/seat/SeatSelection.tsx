@@ -108,7 +108,7 @@ const RenderSeat = React.memo(function RenderSeat({
   handleSeatClick,
   operatorName = "",
   busType = "", // This `busType` refers to the overall bus type, not necessarily a seat's type.
-  provider = "", // Provider from Step1Props
+  provider = "",
   lastSeats = [],
 }: RenderSeatProps) {
   const isSeatSelected = forceSelected || isSelected;
@@ -1062,9 +1062,6 @@ if ((provider === "EZEE_V2" || provider === "EZEE_V3") && !isCMRExpress) {
       let treatAsAllSleeper = allSleepers;
       const hasOnlyRotatedSeats = seatsInRow.length > 0 && seatsInRow.every(s => lastSeats.includes(s.id) || s.isRotated);
 
-      // For EZEE mixed layouts, if ANY seat in the row is a sleeper, the entire
-      // grid row must be expanded to accommodate it, otherwise the taller sleeper
-      // seat will visually collide with the seater-height row below it.
       if (provider === "EZEE_V2" || provider === "EZEE_V3") {
         treatAsAllSleeper = hasSleeperInRow;
       }

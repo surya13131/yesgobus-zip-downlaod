@@ -1,9 +1,9 @@
 import { cityMapping } from "./cityMapping";
 
-export const BASE_URL = "";
-const CACHE_TTL_BUS_LIST = 3 * 60 * 1000; // 3 minutes
-const CACHE_TTL_SEAT_LAYOUT = 2 * 60 * 1000; // 2 minutes
-const CACHE_TTL_CITY = 10 * 60 * 1000; // 10 minutes
+export const BASE_URL = "https://apis.yesgobus.com";
+const CACHE_TTL_BUS_LIST = 3 * 60 * 1000; 
+const CACHE_TTL_SEAT_LAYOUT = 2 * 60 * 1000; 
+const CACHE_TTL_CITY = 10 * 60 * 1000; 
 
 const memoryCache = new Map<string, { data: string; expiry: number }>();
 
@@ -34,17 +34,17 @@ const extractValidPrice = (bus: any): number => {
       let val = 0;
       if (typeof p === 'number') val = p;
       else if (typeof p === 'string') {
-        const match = p.match(/[\d.]+/); // Safely extracts numbers from strings like "INR 700"
-        if (match) val = parseFloat(match[0]); // ✅ FIXED: match[0] used here
+        const match = p.match(/[\d.]+/);
+        if (match) val = parseFloat(match[0]); 
       }
       if (val > 0) return val; 
     }
   }
 
-  // SRS specific string fallback
+
   if (bus.fare_str) {
     const match = bus.fare_str.match(/(\d+)/);
-    if (match) return parseInt(match[0]); // ✅ FIXED: match[0] used here
+    if (match) return parseInt(match[0]); 
   }
 
   return 0;
@@ -62,7 +62,7 @@ export const getMinimumAvailableFare = (raw: any): number => {
     });
   }
 
-  // EZEE
+
   const seatLayoutList =
     raw?.seatLayoutList ||
     raw?.bus?.seatLayoutList ||
@@ -161,7 +161,7 @@ export const googleSignInApi = async (email: string, name: string) => {
   return res.json();
 };
 
-/* ---------------- CITY SEARCH ---------------- */
+
 
 export interface CitySuggestion {
   name: string;
@@ -180,16 +180,16 @@ export interface CitySuggestion {
 export const fetchCitySuggestions = async (
   query: string
 ): Promise<CitySuggestion[]> => {
-  if (query.length < 1) return []; // This was already set to 1, confirming it is correct.
+  if (query.length < 1) return []; 
 
   try {
     const normalizedQuery = query.toLowerCase().trim();
 
-    // Mapping fallback logic
+   
     const mappedNames =
       (cityMapping as any)[normalizedQuery]?.sourceCity || [];
 
-    // Ensures we only send a string, not an array
+
     const searchQuery =
       mappedNames.length > 0 ? mappedNames[0] : query;
       
@@ -246,7 +246,7 @@ export const fetchCitySuggestions = async (
           _id: city._id || `api-${city.id}`,
           vrlCityId: (city.vrlCityId || city.id || "").toString(),
           srsCityId: (city.srsCityId || city.id || "").toString(),
-          ezeeStationCode: finalEzeeCode, // ✅ Fully clean string mapped here
+          ezeeStationCode: finalEzeeCode, 
         };
       });
       
@@ -257,9 +257,6 @@ export const fetchCitySuggestions = async (
     return [];
   }
 };
-
-/* ---------------- BUS MODEL ---------------- */
-
 export interface NormalizedBus {
   id: string;
   operatorName: string;
@@ -276,7 +273,6 @@ export interface NormalizedBus {
   originalData: any;
 }
 
-/* ---------------- VRL BUS LIST ---------------- */
 
 export const fetchVrlBuses = async (
   sourceName: string,
@@ -330,7 +326,6 @@ export const fetchVrlBuses = async (
         bus.RefNo ||
         null;
 
-      // 🛑 BLOCK INVALID BUSES
       if (!referenceNumber || referenceNumber === "0" || referenceNumber === 0) {
         console.warn("❌ Invalid VRL bus skipped:", bus);
         return null;
@@ -350,12 +345,11 @@ export const fetchVrlBuses = async (
         apiProvider: "VRL",
         originalData: {
           ...bus,
-          referenceNumber: finalRef // ✅ Always guarantees a valid string for Seat Layout fetch
+          referenceNumber: finalRef 
         },
       };
     });
 
-    // ✅ Filter removes any `null` values returned by invalid ghost buses
     return mappedBuses.filter(Boolean) as NormalizedBus[];
 
   } catch (error) {
@@ -365,7 +359,7 @@ export const fetchVrlBuses = async (
   return [];
 };
 
-/* ---------------- VRL BUS LIST (V2) ---------------- */
+
 
 export const fetchVrlBusesV2 = async (
   sourceName: string,
@@ -380,14 +374,14 @@ export const fetchVrlBusesV2 = async (
   const searchSource = sourceName.toLowerCase();
   const searchDest = destName.toLowerCase();
 
-  // VRL seems to prefer capitalized names. We'll try the apiName from mapping first, then capitalize.
+
   const sourceAliases = ((cityMapping as any)[searchSource])?.apiName ? [((cityMapping as any)[searchSource]).apiName] : [capitalize(sourceName)];
   const destAliases = ((cityMapping as any)[searchDest])?.apiName ? [((cityMapping as any)[searchDest]).apiName] : [capitalize(destName)];
 
   try {
     for (const from of sourceAliases) {
       for (const to of destAliases) {
-        // Use capitalized names for VRL V2 as it seems to prefer them, based on 404 errors.
+
         const url = `${BASE_URL}/api/busBooking/getVrlBusDetailsV2/${capitalize(from)}/${capitalize(to)}/${date}`;
         console.log("Calling VRL V2 URL:", url);
 
@@ -429,7 +423,6 @@ export const fetchVrlBusesV2 = async (
   return [];
 };
 
-/* ---------------- SRS BUS LIST ---------------- */
 
 export const fetchSrsBuses = async (
   sourceName: string,
@@ -478,7 +471,7 @@ export const fetchSrsBuses = async (
       setCachedData(url, result, CACHE_TTL_BUS_LIST);
     }
 
-    // ✅ FIX: Robust array extraction so SRS never misses data
+
     const data = Array.isArray(result) ? result : (result.data || result.result || result.schedules || result.buses || []);
     return mapData(data);
 
@@ -488,7 +481,7 @@ export const fetchSrsBuses = async (
   }
 };
 
-/* ---------------- SRS BUS LIST (V2) ---------------- */
+
 
 export const fetchSrsBusesV2 = async (
   sourceName: string,
@@ -557,7 +550,7 @@ export const fetchSrsBusesV2 = async (
           }
         }
 
-    // If loop completes with no results
+
     return [];
 
   } catch (err) {
@@ -566,7 +559,6 @@ export const fetchSrsBusesV2 = async (
   }
 };
 
-/* ---------------- SEAT LAYOUT ---------------- */
 
 export const fetchSrsSeatLayout = async (tripId: string) => {
   try {
@@ -583,7 +575,7 @@ export const fetchSrsSeatLayout = async (tripId: string) => {
 
     const contentType = res.headers.get("content-type");
     
-    // Check if response is JSON
+ 
     if (!contentType || !contentType.includes("application/json")) {
       console.error("SRS API returned non-JSON response (likely HTML error page):", contentType);
       return null;
@@ -592,7 +584,7 @@ export const fetchSrsSeatLayout = async (tripId: string) => {
     const result = await res.json();
     console.log("Full SRS Seat API Response:", result);
 
-    // ✅ 3. ADD SAFE FALLBACK FOR SRS SEAT API
+ 
     const finalData = result?.data || result?.result || result;
 
     if (!finalData) {
@@ -645,7 +637,7 @@ export const fetchVrlSeatLayout = async (referenceNumber: string) => {
   }
 };
 
-/* ---------------- FILTERS (Boarding/Dropping) ---------------- */
+
 
 export const fetchBusFilters = async (
   provider: "VRL" | "SRS",
@@ -717,7 +709,6 @@ export const blockSrsSeat = async (tripId: string, payload: any) => {
       return { error: "Invalid boarding/drop ID" };
     }
 
-    // ✅ 4. ADD DEBUG FOR BLOCK CALL (VERY HELPFUL)
     console.log("🚀 FINAL BLOCK REQUEST:", payload);
 
     const res = await fetch(
@@ -729,12 +720,12 @@ export const blockSrsSeat = async (tripId: string, payload: any) => {
       }
     );
 
-    // ✅ 5. FAIL FAST ON 500
+
     if (!res.ok) {
       console.error("❌ SRS BLOCK FAILED:", res.status);
     }
 
-    // ✅ 1. ADD RESPONSE DEBUG (VERY IMPORTANT)
+
     const text = await res.text();
     console.log("SRS BLOCK STATUS:", res.status);
     console.log("SRS BLOCK RAW RESPONSE:", text);
@@ -945,7 +936,7 @@ export const fetchEzeeBusesV3 = async (
   }
 };
 
-// ✅ EZEE BUS SEAT MAP API
+
 const tryDecodeBase64Utf8 = (value: string): string | null => {
   try {
     if (typeof window !== "undefined" && typeof window.atob === "function") {
@@ -1048,9 +1039,7 @@ export const fetchEzeeSeatLayout = async (
       return finalResult;
     }
 
-    // 🛑 THE CRITICAL FIX: Return the raw object directly!
-    // Your `seat.ts` file now has a "Deep Hunt" function that will look inside this object
-    // to find data.bus.seats or data.bus.seatLayout safely.
+
     setCachedData(url, result, CACHE_TTL_SEAT_LAYOUT);
     return result;
   } catch (error) {
@@ -1059,10 +1048,9 @@ export const fetchEzeeSeatLayout = async (
   }
 };
 
-// ✅ EZEE BLOCK SEAT API
 export const blockEzeeSeat = async (payload: any) => {
   try {
-    // 🔥 Hits the Test URL directly
+
     const res = await fetch(`${BASE_URL}/api/bus/ezee/blockSeat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1075,7 +1063,7 @@ export const blockEzeeSeat = async (payload: any) => {
   }
 };
 
-// ✅ EZEE CANCEL SEAT DETAILS API
+
 export const canCancelEzeeSeat = async (bookingId: string) => {
   try {
     const res = await fetch(`${BASE_URL}/api/bus/ezee/canCancelSeat/${bookingId}`);
@@ -1092,7 +1080,6 @@ export const canCancelEzeeSeat = async (bookingId: string) => {
   }
 };
 
-// ✅ EZEE CONFIRM CANCEL API
 export const confirmCancelEzeeSeat = async (payload: { bookingId: string, cca: string | number, ctpc: string }) => {
   try {
     const res = await fetch(`${BASE_URL}/api/bus/ezee/confirmCancelSeat`, {
